@@ -1,2 +1,5 @@
 advent_of_code/target/
 advent_of_code/.idea/.gitignore
+advent_of_code/.idea/advent_of_code.iml
+advent_of_code/.idea/
+advent_of_code/template.txt
