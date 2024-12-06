@@ -74,9 +74,9 @@ fn main() {
         }
     }
 
-    let solutions = collect_solutions();
+    let mut solutions = collect_solutions();
     for day in first_day..=25u8 {
-        if let Some(a) = collect_solutions().get_mut(&day) {
+        if let Some(a) = solutions.get_mut(&day) {
             run(a, n_iterations, test_mode);
         }
     }

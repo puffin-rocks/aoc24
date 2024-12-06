@@ -141,7 +141,7 @@ where
 }
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Vector {
     direction: Direction,
     anchor: Point2D

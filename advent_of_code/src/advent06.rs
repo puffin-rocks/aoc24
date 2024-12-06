@@ -7,7 +7,6 @@ pub(crate) struct Advent {
     canvas: Canvas
 }
 
-
 impl Default for Advent {
     fn default() -> Self {
         Self {
@@ -23,15 +22,14 @@ fn follow_path(
     width: usize,
     height: usize,
     obstacles: &HashSet<Point2D>,
-) -> (HashSet<Point2D>, bool) {
-    let mut path_direction: HashSet<Vector> = HashSet::new();
+) -> (HashSet<Vector>, bool) {
+    let mut path: HashSet<Vector> = HashSet::new();
     let mut vector = Vector::new(current_direction, current_location);
     let mut is_out_of_bounds: bool = true;
     loop {
-        //println!("{:?}", vector.anchor());
         let next_location = vector.get_point(1);
         if next_location.is_out_of_bounds(width, height){
-            path_direction.insert(vector);
+            path.insert(vector);
             break;
         }
         if obstacles.contains(&next_location) {
@@ -44,18 +42,14 @@ fn follow_path(
             };
             vector = Vector::new(current_direction, *vector.anchor());
         } else {
-            if path_direction.contains(&vector){
+            if path.contains(&vector){
                 is_out_of_bounds = false;
                 break;
             }
-            path_direction.insert(vector);
+            path.insert(vector);
             vector = Vector::new(current_direction, next_location);
         }
     };
-    let path: HashSet<Point2D> = path_direction
-        .iter()
-        .map(|v| *v.anchor())
-        .collect();
     (path, is_out_of_bounds)
 }
 
@@ -82,7 +76,11 @@ impl Solve for Advent {
             let (w, h) = (*self.canvas.width(), *self.canvas.height());
             let obstacles = self.canvas.locate_element('#');
 
-            let (points, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
+            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
+            let points: HashSet<Point2D> = path
+                .iter()
+                .map(|v| *v.anchor())
+                .collect();
             if is_out_of_bounds { points.len() } else { 0 }
         });
         assert_eq!(result, match test_mode{
@@ -101,17 +99,21 @@ impl Solve for Advent {
             let (w, h) = (*self.canvas.width(), *self.canvas.height());
             let obstacles = self.canvas.locate_element('#');
 
-            let (points, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
+            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
             if !is_out_of_bounds {
                 return 0;
             }
 
-            points.iter().filter(|&p| {
-                let mut obstacles_upd = obstacles.clone();
-                obstacles_upd.insert(*p);
-                let (_, out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles_upd);
-                !out_of_bounds
-            }).count()
+            let points = path.iter().map(|v| *v.anchor()).collect::<HashSet<_>>();
+
+            points
+                .iter()
+                .filter(|&&p| {
+                    let mut obstacles_upd = obstacles.clone();
+                    obstacles_upd.insert(p);
+                    !follow_path(guard_location, Direction::Down, w, h, &obstacles_upd).1
+                })
+                .count()
         });
         assert_eq!(result, match test_mode{
             true => 6,
