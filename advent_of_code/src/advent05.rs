@@ -123,20 +123,26 @@ impl Solve for Advent {
         println!("Number of updates {}", self.updates.len());
     }
 
-    fn compute_part1_answer(&self, verbose: bool) -> bool{
+    fn compute_part1_answer(&self, verbose: bool, test_mode: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 1) }
         let sum = self.sum_middle_pages(false,false);
-        assert_eq!(sum, 3608);
+        assert_eq!(sum, match test_mode{
+            true => 143,
+            false => 3608
+        });
         if verbose {
             println!("Sum of middle pages of correctly ordered updates: {}", sum);
         }
         true
     }
 
-    fn compute_part2_answer(&self, verbose: bool) -> bool{
+    fn compute_part2_answer(&self, verbose: bool, test_mode: bool) -> bool{
         if !self.label.has_input  { return no_solution_message(verbose, 2) }
         let sum = self.sum_middle_pages(true,true);
-        assert_eq!(sum, 4922);
+        assert_eq!(sum, match test_mode{
+            true => 123,
+            false => 4922
+        });
         if verbose {
             println!("Sum of middle pages of re-ordered updates: {}", sum);
         }

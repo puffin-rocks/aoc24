@@ -52,10 +52,10 @@ pub(crate) trait Solve
     fn info(&self){
         println!("Advent is missing input");
     }
-    fn compute_part1_answer(&self, verbose: bool) -> bool{
+    fn compute_part1_answer(&self, verbose: bool, _test_mode: bool) -> bool{
         no_solution_message(verbose, 1)
     }
-    fn compute_part2_answer(&self, verbose: bool) -> bool{
+    fn compute_part2_answer(&self, verbose: bool, _test_mode: bool) -> bool{
         no_solution_message(verbose, 2)
     }
 }

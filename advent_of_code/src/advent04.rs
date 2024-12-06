@@ -58,7 +58,7 @@ impl Solve for Advent {
         println!{"Canvas width: {}", self.canvas.width()}
     }
 
-    fn compute_part1_answer(&self, verbose: bool) -> bool{
+    fn compute_part1_answer(&self, verbose: bool, test_mode: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 1) }
         let first_letter = self.word[0];
         let mut count = 0;
@@ -96,14 +96,18 @@ impl Solve for Advent {
                 }
             }
         }
-        assert_eq!(count, 2547);
+        assert_eq!(count, match test_mode{
+            true => 18,
+            false => 2547
+        });
+
         if verbose {
             println! {"Number of words: {}", count}
         }
         true
     }
 
-    fn compute_part2_answer(&self, verbose: bool) -> bool{
+    fn compute_part2_answer(&self, verbose: bool, test_mode: bool) -> bool{
         if !self.label.has_input  { return no_solution_message(verbose, 2) }
         let cut_word = self.word[1..].to_vec();
         let first_letter = cut_word[0];
@@ -157,7 +161,10 @@ impl Solve for Advent {
                 }
             }
         }
-        assert_eq!(count, 1939);
+        assert_eq!(count, match test_mode{
+            true => 9,
+            false => 1939
+        });
         if verbose {
             println! {"Number of words: {}", count}
         }

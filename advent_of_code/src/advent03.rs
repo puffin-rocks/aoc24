@@ -61,7 +61,7 @@ impl Solve for Advent {
         println!("Length of memory is {}", self.memory.len())
     }
 
-    fn compute_part1_answer(&self, verbose: bool) -> bool{
+    fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 1) }
         let sum = self.sum_uncorrupted_instructions( true);
         assert_eq!(sum, 187825547);
@@ -70,7 +70,7 @@ impl Solve for Advent {
         }
         true
     }
-    fn compute_part2_answer(&self, verbose: bool) -> bool{
+    fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
         if !self.label.has_input  { return no_solution_message(verbose, 2) }
         let sum = self.sum_uncorrupted_instructions( false);
         assert_eq!(sum, 85508223);

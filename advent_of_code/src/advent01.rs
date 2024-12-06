@@ -38,7 +38,7 @@ impl Solve for Advent {
         println!("Left vector has length: {}", self.left.len());
     }
 
-    fn compute_part1_answer(&self, verbose: bool) -> bool{
+    fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 1) }
         let (mut right, mut left) = (self.right.clone(), self.left.clone());
         right.sort_unstable();
@@ -54,7 +54,7 @@ impl Solve for Advent {
         true
     }
 
-    fn compute_part2_answer(&self, verbose: bool) -> bool{
+    fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 2)  }
         let mut num_count:HashMap<i32, i32> = HashMap::new();
         let mut score: i32 = 0;

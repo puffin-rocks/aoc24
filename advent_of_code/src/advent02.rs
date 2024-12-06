@@ -109,7 +109,7 @@ impl Solve for Advent {
         println!("Number of reports is: {}", self.reports.len());
     }
 
-    fn compute_part1_answer(&self, verbose: bool) -> bool{
+    fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 1) }
         let n_safe_reports = self.count_safe_report(true);
         assert_eq!(n_safe_reports, 224);
@@ -119,7 +119,7 @@ impl Solve for Advent {
         true
     }
 
-    fn compute_part2_answer(&self, verbose: bool) -> bool{
+    fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 2) }
         let n_safe_reports = self.count_safe_report(false);
         assert_eq!(n_safe_reports, 293);

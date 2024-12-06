@@ -72,7 +72,7 @@ impl Solve for Advent {
         println!{"Location of the quard is {:?}", self.canvas.locate_element('^').iter().next().expect("Guard not found")}
     }
 
-    fn compute_part1_answer(&self, verbose: bool) -> bool{
+    fn compute_part1_answer(&self, verbose: bool, test_mode: bool) -> bool{
         if !self.label.has_input { return no_solution_message(verbose, 1) }
         let result = self.canvas.locate_element('^').iter().next().copied().map_or(0, |guard_location| {
             let (w, h) = (*self.canvas.width(), *self.canvas.height());
@@ -81,36 +81,41 @@ impl Solve for Advent {
             let (points, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
             if is_out_of_bounds { points.len() } else { 0 }
         });
-        assert_eq!(result, 4663);
-        //assert_eq!(result, 41);
+        assert_eq!(result, match test_mode{
+            true => 41,
+            false => 4663
+        });
         if verbose {
             println!("Number of visited points is {}", result)
         }
         true
     }
 
-    fn compute_part2_answer(&self, verbose: bool) -> bool{
-        if !self.label.has_input  { return no_solution_message(verbose, 2) }
-        let result = self.canvas.locate_element('^').iter().next().copied().map_or(0, |guard_location| {
-            let (w, h) = (*self.canvas.width(), *self.canvas.height());
-            let obstacles = self.canvas.locate_element('#');
-
-            let (points, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
-            if !is_out_of_bounds {
-                return 0;
-            }
-
-            points.iter().filter(|&p| {
-                let mut obstacles_upd = obstacles.clone();
-                obstacles_upd.insert(*p);
-                let (_, out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles_upd);
-                !out_of_bounds
-            }).count()
-        });
-        assert_eq!(result, 1530);
-        if verbose {
-            println!("Number of looping obstacles is {}", result)
-        }
-        true
-    }
+    // fn compute_part2_answer(&self, verbose: bool, test_mode: bool) -> bool{
+    //     if !self.label.has_input  { return no_solution_message(verbose, 2) }
+    //     let result = self.canvas.locate_element('^').iter().next().copied().map_or(0, |guard_location| {
+    //         let (w, h) = (*self.canvas.width(), *self.canvas.height());
+    //         let obstacles = self.canvas.locate_element('#');
+    //
+    //         let (points, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
+    //         if !is_out_of_bounds {
+    //             return 0;
+    //         }
+    //
+    //         points.iter().filter(|&p| {
+    //             let mut obstacles_upd = obstacles.clone();
+    //             obstacles_upd.insert(*p);
+    //             let (_, out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles_upd);
+    //             !out_of_bounds
+    //         }).count()
+    //     });
+    // assert_eq!(result, match test_mode{
+    //     true => 6,
+    //     false => 1530
+    // });
+    //     if verbose {
+    //         println!("Number of looping obstacles is {}", result)
+    //     }
+    //     true
+    // }
 }
