@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Direction{
     Up,
     UpRight,
@@ -141,7 +141,7 @@ where
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) struct Vector {
     direction: Direction,
     anchor: Point2D
@@ -164,6 +164,9 @@ impl Vector {
     pub(crate) fn direction(&self) -> &Direction{
         &self.direction
     }
+    pub(crate) fn anchor(&self) -> &Point2D{
+        &self.anchor
+    }
 
     pub(crate) fn is_out_of_bounds(&self, length: usize, width: usize, height: usize) -> bool {
         for i in 0..length{
@@ -177,6 +180,15 @@ impl Vector {
 
     pub(crate) fn shift(&self, p: &Point2D) -> Vector {
         Vector::new(self.direction, p + &self.anchor)
+    }
+}
+
+impl Eq for Vector {}
+
+impl Hash for Vector {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.direction.to_point().hash(state);
+        self.anchor.hash(state);
     }
 }
 
