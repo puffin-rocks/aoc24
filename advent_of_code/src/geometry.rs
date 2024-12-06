@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul};
 
 #[derive(Debug, Clone, Copy)]
@@ -53,7 +55,7 @@ impl Direction {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Point2D {
     x: isize,
     y: isize
@@ -90,6 +92,15 @@ impl Point2D {
     }
 
 }
+
+impl Hash for Point2D {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.x.hash(state); // Include `x` in the hash
+        self.y.hash(state); // Include `y` in the hash
+    }
+}
+
+impl Eq for Point2D {}
 
 impl Add<&Point2D> for Point2D {
     type Output = Point2D;
@@ -201,6 +212,16 @@ impl Canvas {
     }
     pub(crate) fn get_element(&self, point: &Point2D) -> char{
         self.rows[point.y as usize][point.x as usize]
+    }
+
+    pub(crate) fn locate_element(&self, el: char) -> HashSet<Point2D>{
+        let mut result = HashSet::new();
+        for p in self.iter(){
+            if self.get_element(&p)==el{
+                result.insert(p);
+            }
+        }
+        result
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = Point2D>+ '_  {

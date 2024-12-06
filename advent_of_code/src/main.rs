@@ -8,6 +8,7 @@ mod advent03;
 mod advent04;
 mod geometry;
 mod advent05;
+mod advent06;
 
 use std::time::{Duration, Instant};
 
@@ -51,13 +52,14 @@ fn collect_solutions() -> HashMap<u8, Box<dyn Solve>>{
     add_default_to_collection::<advent03::Advent>(&mut advents);
     add_default_to_collection::<advent04::Advent>(&mut advents);
     add_default_to_collection::<advent05::Advent>(&mut advents);
+    add_default_to_collection::<advent06::Advent>(&mut advents);
     advents
 }
 
 fn main() {
-    let n_iterations = 10;
+    let n_iterations = 0;
     let test_mode = false;
-    for day in 1u8..=5u8 {
+    for day in 6u8..=6u8 {
         if let Some(a) = collect_solutions().get_mut(&day) {
             run(a, n_iterations, test_mode);
         }
