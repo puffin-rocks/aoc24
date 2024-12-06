@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use crate::geometry::{Canvas, Direction, Point2D, Vector};
 use crate::utils::{Solve, Label, no_solution_message};
+use rayon::prelude::*;
 
 pub(crate) struct Advent {
     label: Label,
@@ -40,7 +41,7 @@ fn follow_path(
                 Direction::Left => Direction::Down,
                 _ => Direction::None,
             };
-            vector = Vector::new(current_direction, *vector.anchor());
+            vector.change_direction(current_direction);
         } else {
             if path.contains(&vector){
                 is_out_of_bounds = false;
@@ -104,14 +105,16 @@ impl Solve for Advent {
                 return 0;
             }
 
-            let points = path.iter().map(|v| *v.anchor()).collect::<HashSet<_>>();
+            let mut points = path.iter().map(|v| *v.anchor()).collect::<HashSet<_>>();
+            points.remove(&guard_location);
 
             points
-                .iter()
+                .par_iter()
                 .filter(|&&p| {
                     let mut obstacles_upd = obstacles.clone();
                     obstacles_upd.insert(p);
-                    !follow_path(guard_location, Direction::Down, w, h, &obstacles_upd).1
+                    let is_looping = !follow_path(guard_location, Direction::Down, w, h, &obstacles_upd).1;
+                    is_looping
                 })
                 .count()
         });

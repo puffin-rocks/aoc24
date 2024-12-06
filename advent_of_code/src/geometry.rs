@@ -181,6 +181,15 @@ impl Vector {
     pub(crate) fn shift(&self, p: &Point2D) -> Vector {
         Vector::new(self.direction, p + &self.anchor)
     }
+
+    #[allow(dead_code)]
+    pub(crate) fn change_anchor(&mut self, anchor: Point2D){
+        self.anchor = anchor;
+    }
+
+    pub(crate) fn change_direction(&mut self, direction: Direction){
+        self.direction = direction;
+    }
 }
 
 impl Eq for Vector {}
