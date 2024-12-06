@@ -215,13 +215,9 @@ impl Canvas {
     }
 
     pub(crate) fn locate_element(&self, el: char) -> HashSet<Point2D>{
-        let mut result = HashSet::new();
-        for p in self.iter(){
-            if self.get_element(&p)==el{
-                result.insert(p);
-            }
-        }
-        result
+        self.iter()
+            .filter(|p| self.get_element(p) == el)
+            .collect()
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = Point2D>+ '_  {
