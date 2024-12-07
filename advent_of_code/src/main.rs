@@ -25,6 +25,19 @@ where
     Ok(start.elapsed()/n_iterations)
 }
 
+fn format_duration(duration: Duration) -> String{
+    let total_seconds = duration.as_secs() as f64 + duration.subsec_nanos() as f64 / 1_000_000_000.0;
+    if total_seconds >= 1.0 {
+        format!("{:.1}s", total_seconds)
+    } else if duration.as_millis() >= 1 {
+        let total_millis = (duration.as_micros() as f64)/1_000.0;
+        format!("{:.1}ms", total_millis)
+    } else {
+        let total_micros = (duration.as_nanos() as f64)/1_000.0;
+        format!("{:.1}µs", total_micros)
+    }
+}
+
 fn run(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool) {
     println!("{}", "-".repeat(50));
     println!(":::Day {}:::", a.get_label().number);
@@ -54,7 +67,9 @@ fn run(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool) {
                 println!("{}", result);
                 if n_iterations > 0 {
                     let d = timeit(|| { method(a, test_mode) }, n_iterations);
-                    if let Ok(d) = d {println!("Time taken {}: {:?}", part_name, d);}
+                    if let Ok(d) = d {
+                        println!("Time taken {}: {}", part_name, format_duration(d));
+                    }
                 }
             }
             Err(msg) => {

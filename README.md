@@ -12,6 +12,6 @@ What to learn:
 - **Day 02**. Option, match, iter(), skip(), take(), chain(), collect()
 - **Day 03**. Option, Result, match, find(), rfind()
 - **Day 04**. Enum, Struct, Hash, filter(), flat_map(), map(), operator overload, generic trait, closure
-- **Day 05**. ... or_insert_with()
+- **Day 05**. lifetime parameter, operator overload, or_insert_with()
 - **Day 06**. HashSet, next(), filter(), map_or(), par_iter(), loop, nested closure
 - **Day 07**. Enum with arguments, BTreeMap, passing function as argument, format!, pow(), log(), floor()

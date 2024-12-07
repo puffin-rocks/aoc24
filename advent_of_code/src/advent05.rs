@@ -3,14 +3,14 @@ use std::collections::{HashMap, HashSet};
 use crate::utils::{Solve, Label, assert_display};
 
 #[derive(Debug, PartialEq, Clone)]
-struct Page {
+struct Page<'a> {
     number: usize,
-    page_numbers_after: Option<HashSet<usize>>
+    page_numbers_after: Option<&'a HashSet<usize>>
 }
 
 
-impl Page {
-    fn new(number: usize, page_numbers_after: Option<HashSet<usize>>) -> Self{
+impl<'a> Page<'a> {
+    fn new(number: usize, page_numbers_after: Option<&'a HashSet<usize>>) -> Self{
         Self{
             number,
             page_numbers_after
@@ -18,7 +18,7 @@ impl Page {
     }
 }
 
-impl PartialOrd for Page {
+impl<'a> PartialOrd for Page<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         if self==other {
             return Some(Ordering::Equal);
@@ -56,14 +56,14 @@ impl PartialOrd for Page {
     }
 }
 
-pub(crate) struct Advent {
+pub(crate) struct Advent<'a> {
     label: Label,
     le_dict: HashMap<usize, HashSet<usize>>,
-    updates: Vec<Vec<Page>>
+    updates: Vec<Vec<Page<'a>>>
 }
 
 
-impl Default for Advent {
+impl<'a> Default for Advent<'a> {
     fn default() -> Self {
         Self {
             label: Label::new(5),
@@ -73,7 +73,7 @@ impl Default for Advent {
     }
 }
 
-impl Advent {
+impl<'a> Advent<'a> {
     fn sum_middle_pages(&self,
                         skip_correctly_ordered: bool,
                         fix_incorrectly_ordered: bool,
@@ -83,16 +83,19 @@ impl Advent {
                         part: u8) -> Result<String, String>{
         self.check_input(Some(part))?;
         let sum = self.updates.iter().map(|update| {
-            let update_len = update.len();
+            let mut update_clone = update.clone();
+            for p in &mut update_clone{
+                p.page_numbers_after = self.le_dict.get(&p.number);
+            }
+            let update_len = update_clone.len();
             let middle = update_len / 2;
-            let is_ordered = update.windows(2).all(|w| w[0] < w[1]);
+            let is_ordered = update_clone.windows(2).all(|w| w[0] < w[1]);
 
             if is_ordered && !skip_correctly_ordered {
-                update[middle].number
+                update_clone[middle].number
             } else if !is_ordered && fix_incorrectly_ordered {
-                let mut sorted_update = update.clone();
-                sorted_update.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-                sorted_update[middle].number
+                update_clone.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
+                update_clone[middle].number
             } else {
                 0
             }
@@ -108,7 +111,7 @@ impl Advent {
     }
 }
 
-impl Solve for Advent {
+impl<'a> Solve for Advent<'a> {
     fn get_label(&self) -> &Label{ &self.label }
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
 
@@ -125,7 +128,7 @@ impl Solve for Advent {
             let pages: Vec<Page> = line
                 .split(',')
                 .map(|pn| pn.parse::<usize>().expect(&format!("Cannot parse page number {}", pn)))
-                .map(|pn| Page::new(pn, self.le_dict.get(&pn).cloned()))
+                .map(|pn| Page::new(pn, None))
                 .collect();
             self.updates.push(pages);
         }
