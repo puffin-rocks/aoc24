@@ -33,6 +33,18 @@ pub(crate) trait Solve
     fn get_label(&self) -> &Label;
     fn get_label_mut(&mut self) -> &mut Label;
 
+    fn check_input(&self, part: Option<u8>) -> Result<(), String> {
+        if self.get_label().has_input {
+            Ok(())
+        }
+        else
+        {
+            match part{
+                Some(part) => Err(no_solution_message(part)),
+                None => Err(String::from("Advent is missing input"))
+            }
+        }
+    }
     fn add_record_from_line(&mut self, _: String) -> Result<(), std::num::ParseIntError> {
         "invalid".parse::<i32>()?;
         Ok(())
@@ -50,31 +62,28 @@ pub(crate) trait Solve
         Ok(())
     }
 
-    fn info(&self){
-        println!("Advent is missing input");
+    fn info(&self) -> Result<(), String> {
+        Err(String::from("Advent is missing input"))
     }
-    fn compute_part1_answer(&self, verbose: bool, _test_mode: bool) -> bool{
-        no_solution_message(verbose, 1)
+    fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
+        Err(no_solution_message(1))
     }
-    fn compute_part2_answer(&self, verbose: bool, _test_mode: bool) -> bool{
-        no_solution_message(verbose, 2)
+    fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
+        Err(no_solution_message(2))
     }
 }
 
 
-pub fn no_solution_message(verbose: bool, part: u8) -> bool {
-    if verbose {
-        println!("Part {} not solved", part);
-    }
-    false
+pub fn no_solution_message(part: u8) -> String{
+    format!("Part {} not solved", part)
 }
 
 pub fn assert_display(result: usize,
          result_test: Option<usize>,
          result_prd: usize,
-         verbose: bool,
+         header: &str,
          test_mode: bool
-) -> bool{
+) -> Result<String, String>{
     match result_test {
         Some(result_test) => {
             assert_eq!(result, match test_mode{
@@ -82,13 +91,14 @@ pub fn assert_display(result: usize,
                 false => result_prd
             });
         },
-        None => assert_eq!(result, result_prd)
+        None => {
+            match test_mode{
+                true =>  {return Err(String::from("Test mode not implemented"));},
+                false => assert_eq!(result, result_prd)
+            }
+        }
     };
-
-    if verbose {
-        println!("Sum of solvable equations: {}", result);
-    }
-    true
+    Ok(format!("{}: {}", header, result))
 }
 
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>

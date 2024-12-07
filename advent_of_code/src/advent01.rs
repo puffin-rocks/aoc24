@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use itertools::izip;
-use crate::utils::{no_solution_message, Label, Solve};
+use crate::utils::{assert_display, no_solution_message, Label, Solve};
 
 pub(crate) struct Advent {
     label: Label,
@@ -32,14 +32,15 @@ impl Solve for Advent {
         Ok(())
     }
 
-    fn info(&self){
-        if !self.label.has_input { return println!("Advent is missing input")}
+    fn info(&self) -> Result<(), String>{
+        self.check_input(None)?;
         println!("Right vector has length: {}", self.right.len());
         println!("Left vector has length: {}", self.left.len());
+        Ok(())
     }
 
-    fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, 1) }
+    fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(1))?;
         let (mut right, mut left) = (self.right.clone(), self.left.clone());
         right.sort_unstable();
         left.sort_unstable();
@@ -47,15 +48,15 @@ impl Solve for Advent {
         for (n, m) in izip!(&left, &right){
             sum+=(n-m).abs();
         }
-        assert_eq!(sum, 2285373);
-        if verbose {
-            println!("Total distance between the lists: {}", sum);
-        }
-        true
+        assert_display(sum as usize,
+                       None,
+                       2285373,
+                       "Total distance between the lists",
+                       test_mode )
     }
 
-    fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, 2)  }
+    fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
         let mut num_count:HashMap<i32, i32> = HashMap::new();
         let mut score: i32 = 0;
         for &num in &self.right {
@@ -70,10 +71,10 @@ impl Solve for Advent {
                 score+=num*count;
             }
         }
-        assert_eq!(score, 21142653);
-        if verbose {
-            println!("Similarity score: {}", score);
-        }
-        true
+        assert_display(score as usize,
+                       None,
+                       21142653,
+                       "Similarity score",
+                       false )
     }
 }

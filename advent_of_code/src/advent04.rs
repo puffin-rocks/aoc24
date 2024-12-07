@@ -1,4 +1,4 @@
-use crate::utils::{Solve, Label, no_solution_message};
+use crate::utils::{Solve, Label, no_solution_message, assert_display};
 use crate::geometry::{Point2D, Direction, Vector, Canvas};
 
 pub(crate) struct Advent {
@@ -52,14 +52,15 @@ impl Solve for Advent {
         self.canvas.add_row(line.chars().collect());
         Ok(())
     }
-    fn info(&self){
-        if !self.label.has_input {println!("Advent is missing input")}
-        println!{"Canvas height: {}", self.canvas.height()}
-        println!{"Canvas width: {}", self.canvas.width()}
+    fn info(&self) -> Result<(), String>{
+        self.check_input(None)?;
+        println!("Canvas height: {}", self.canvas.height());
+        println!("Canvas width: {}", self.canvas.width());
+        Ok(())
     }
 
-    fn compute_part1_answer(&self, verbose: bool, test_mode: bool) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, 1) }
+    fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(1))?;
         let first_letter = self.word[0];
         let mut count = 0;
         if self.solve_via_rotation{
@@ -96,19 +97,16 @@ impl Solve for Advent {
                 }
             }
         }
-        assert_eq!(count, match test_mode{
-            true => 18,
-            false => 2547
-        });
-
-        if verbose {
-            println! {"Number of words: {}", count}
-        }
-        true
+        assert_display(count,
+                       Some(18),
+                       2547,
+                       "Number of words",
+                       test_mode,
+        )
     }
 
-    fn compute_part2_answer(&self, verbose: bool, test_mode: bool) -> bool{
-        if !self.label.has_input  { return no_solution_message(verbose, 2) }
+    fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
         let cut_word = self.word[1..].to_vec();
         let first_letter = cut_word[0];
         let mut count = 0;
@@ -161,13 +159,11 @@ impl Solve for Advent {
                 }
             }
         }
-        assert_eq!(count, match test_mode{
-            true => 9,
-            false => 1939
-        });
-        if verbose {
-            println! {"Number of words: {}", count}
-        }
-        true
+        assert_display(count,
+                       Some(9),
+                       1939,
+                       "Number of words",
+                       test_mode,
+        )
     }
 }

@@ -114,12 +114,10 @@ impl Advent{
              convertable: fn((usize, usize))->Convertable,
              result_test: usize,
              result_prd: usize,
-             verbose: bool,
              test_mode: bool,
-             part: u8) -> bool{
+             part: u8) -> Result<String, String>{
 
-        if !self.label.has_input { return no_solution_message(verbose, part) }
-
+        self.check_input(Some(part))?;
         let result = self.equations
             .par_iter()
             .filter(|&e| {
@@ -128,7 +126,7 @@ impl Advent{
             .map(|e|{e.lhs})
             .sum::<usize>();
 
-        assert_display(result, Some(result_test), result_prd, verbose, test_mode)
+        assert_display(result, Some(result_test), result_prd, "Sum of solvable equations", test_mode)
     }
 }
 
@@ -148,8 +146,8 @@ impl Solve for Advent {
         Ok(())
     }
 
-    fn info(&self){
-        if !self.label.has_input {println!("Advent is missing input")}
+    fn info(&self) -> Result<(), String>{
+        self.check_input(None)?;
         println!("Number of equations: {}", self.equations.len());
         let mut count = BTreeMap::new();
         self.equations.iter().for_each(|e| *count.entry(e.rhs.len()).or_insert(0) += 1);
@@ -162,22 +160,21 @@ impl Solve for Advent {
                 value
             );
         }
+        Ok(())
     }
 
-    fn compute_part1_answer(&self, verbose: bool, test_mode: bool) -> bool{
+    fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
         self.solve(Convertable::Binary,
                    3749,
                    1582598718861,
-                   verbose,
                    test_mode,
                    1
         )
     }
-    fn compute_part2_answer(&self, verbose: bool, test_mode: bool) -> bool{
+    fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.solve(Convertable::Trinary,
                    11387,
                    165278151522644,
-                   verbose,
                    test_mode,
                    2
         )

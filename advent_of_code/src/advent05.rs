@@ -79,10 +79,9 @@ impl Advent {
                         fix_incorrectly_ordered: bool,
                         result_test: usize,
                         result_prd: usize,
-                        verbose: bool,
                         test_mode: bool,
-                        part: u8) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, part) }
+                        part: u8) -> Result<String, String>{
+        self.check_input(Some(part))?;
         let sum = self.updates.iter().map(|update| {
             let update_len = update.len();
             let middle = update_len / 2;
@@ -98,7 +97,14 @@ impl Advent {
                 0
             }
         }).sum();
-        assert_display(sum, Some(result_test), result_prd, verbose, test_mode)
+        let mut header = "";
+        if !skip_correctly_ordered{
+            header = "Sum of middle pages of correctly ordered updates";
+        }
+        if fix_incorrectly_ordered{
+            header = "Sum of middle pages of re-ordered updates";
+        }
+        assert_display(sum, Some(result_test), result_prd, header, test_mode)
     }
 }
 
@@ -126,29 +132,28 @@ impl Solve for Advent {
         Ok(())
     }
 
-    fn info(&self){
-        if !self.label.has_input {println!("Advent is missing input")}
+    fn info(&self) -> Result<(), String>{
+        self.check_input(None)?;
         println!("Ordering dictionary of length {}", self.le_dict.len());
         println!("Number of updates {}", self.updates.len());
+        Ok(())
     }
 
-    fn compute_part1_answer(&self, verbose: bool, test_mode: bool) -> bool{
+    fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
         self.sum_middle_pages(false,
                                         false,
                                         143,
                                         3608,
-                                        verbose,
                                         test_mode,
                                         1
         )
     }
 
-    fn compute_part2_answer(&self, verbose: bool, test_mode: bool) -> bool{
+    fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.sum_middle_pages(true,
                                         true,
                                         123,
                                         4922,
-                                        verbose,
                                         test_mode,
                                         2
         )

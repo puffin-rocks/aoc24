@@ -86,17 +86,22 @@ impl Advent {
     fn count_safe_report(&self,
                          zero_tolerance: bool,
                          result_prd: usize,
-                         verbose: bool,
                          part: u8
-    ) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, part) }
+    ) -> Result<String, String>{
+        self.check_input(Some(part))?;
         let mut n_safe_reports = 0;
         for r in &self.reports{
             if r.check_safety(zero_tolerance){
                 n_safe_reports+=1;
             }
         }
-        assert_display(n_safe_reports, None, result_prd, verbose, false)
+        let header = if zero_tolerance{
+            "Number of save reports (zero tolerance)"
+        }
+        else{
+            "Number of save reports (single bad level)"
+        };
+        assert_display(n_safe_reports, None, result_prd, header, false)
     }
 }
 
@@ -110,23 +115,22 @@ impl Solve for Advent {
         Ok(())
     }
 
-    fn info(&self){
-        if !self.label.has_input { return println!("Advent is missing input")}
+    fn info(&self) -> Result<(), String>{
+        self.check_input(None)?;
         println!("Number of reports is: {}", self.reports.len());
+        Ok(())
     }
 
-    fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
+    fn compute_part1_answer(&self, _: bool) -> Result<String, String>{
         self.count_safe_report(true,
                                224,
-                               verbose,
                                1
         )
     }
 
-    fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
+    fn compute_part2_answer(&self, _: bool) -> Result<String, String>{
         self.count_safe_report(false,
                                293,
-                               verbose,
                                2
         )
     }

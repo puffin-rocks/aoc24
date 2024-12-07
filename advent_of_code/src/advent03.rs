@@ -19,10 +19,9 @@ impl Advent {
     fn sum_uncorrupted_instructions(&self,
                                     always_enabled: bool,
                                     result_prd: usize,
-                                    verbose: bool,
                                     part: u8
-    ) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, part) }
+    ) -> Result<String, String>{
+        self.check_input(Some(part))?;
 
         let mut sum = 0;
         let mut enabled = 1;
@@ -48,7 +47,12 @@ impl Advent {
                 };
             }
         }
-        assert_display(sum as usize, None, result_prd, verbose, false)
+        let header = if always_enabled{
+            "Total sum of uncorrupted mul instructions"
+        }else{
+            "Total sum of uncorrupted enabled mul instructions"
+        };
+        assert_display(sum as usize, None, result_prd, header, false)
     }
 }
 
@@ -63,22 +67,21 @@ impl Solve for Advent {
         Ok(())
     }
 
-    fn info(&self){
-        if !self.label.has_input {println!("Advent is missing input")}
-        println!("Length of memory is {}", self.memory.len())
+    fn info(&self) -> Result<(), String>{
+        self.check_input(None)?;
+        println!("Length of memory is {}", self.memory.len());
+        Ok(())
     }
 
-    fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
+    fn compute_part1_answer(&self, _: bool) -> Result<String, String>{
         self.sum_uncorrupted_instructions( true,
                                                      187825547,
-                                                     verbose,
                                                      1
         )
     }
-    fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
+    fn compute_part2_answer(&self, _: bool) -> Result<String, String>{
         self.sum_uncorrupted_instructions( false,
                                            85508223,
-                                           verbose,
                                            2
         )
     }
