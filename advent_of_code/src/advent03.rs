@@ -1,4 +1,4 @@
-use crate::utils::{Solve, Label, no_solution_message, assert_display};
+use crate::utils::{Solve, Label, assert_display};
 
 pub(crate) struct Advent {
     label: Label,

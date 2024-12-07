@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap};
-use crate::utils::{Solve, Label, no_solution_message, assert_display};
+use crate::utils::{Solve, Label, assert_display};
 use rayon::prelude::*;
 
 enum Convertable {

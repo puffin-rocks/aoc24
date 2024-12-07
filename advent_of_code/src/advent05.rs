@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use crate::utils::{Solve, Label, no_solution_message, assert_display};
+use crate::utils::{Solve, Label, assert_display};
 
 #[derive(Debug, PartialEq, Clone)]
 struct Page {

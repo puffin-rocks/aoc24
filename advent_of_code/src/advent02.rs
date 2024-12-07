@@ -1,5 +1,5 @@
 use itertools::izip;
-use crate::utils::{line2vec_i32, Solve, Label, no_solution_message, assert_display};
+use crate::utils::{line2vec_i32, Solve, Label, assert_display};
 
 struct Report{
     levels: Vec<i32>,

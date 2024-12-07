@@ -25,36 +25,9 @@ where
     Ok(start.elapsed()/n_iterations)
 }
 
-fn run(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool){
-    match a.read_input(test_mode){
-        Ok(_) => {
-            if let Err(msg) = a.info() {println!("{}", msg)};
-            match a.compute_part1_answer(test_mode) {
-                Ok(result) => {
-                    println!("{}", result);
-                    if n_iterations > 0 {
-                        let d = timeit(|| { a.compute_part1_answer(test_mode) }, n_iterations);
-                        println!("Time taken Part 1: {:?}", d);
-                    }
-                }
-                Err(msg) => {println!("{}", msg);}
-            }
-            match a.compute_part2_answer(test_mode) {
-                Ok(result) => {
-                    println!("{}", result);
-                    if n_iterations > 0 {
-                        let d = timeit(|| { a.compute_part2_answer(test_mode) }, n_iterations);
-                        println!("Time taken Part 2: {:?}", d);
-                    }
-                }
-                Err(msg) => {println!("{}", msg);}
-            }
-        }
-        Err(_) => {println!("{}", "Cannot read puzzle input")}
-    }
-}
-
-fn run_gpt(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool) {
+fn run(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool) {
+    println!("{}", "-".repeat(50));
+    println!(":::Day {}:::", a.get_label().number);
     if let Err(_) = a.read_input(test_mode) {
         println!("Cannot read puzzle input");
         return;
@@ -81,7 +54,7 @@ fn run_gpt(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool) {
                 println!("{}", result);
                 if n_iterations > 0 {
                     let d = timeit(|| { method(a, test_mode) }, n_iterations);
-                    println!("Time taken {}: {:?}", part_name, d);
+                    if let Ok(d) = d {println!("Time taken {}: {:?}", part_name, d);}
                 }
             }
             Err(msg) => {
@@ -89,6 +62,7 @@ fn run_gpt(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool) {
             }
         }
     }
+    println!("{}", "\n");
 }
 
 //the 'static lifetime is a special lifetime that signifies the entire duration of the program.
@@ -129,7 +103,7 @@ fn main() {
     let mut solutions = collect_solutions();
     for day in first_day..=25u8 {
         if let Some(a) = solutions.get_mut(&day) {
-            run_gpt(a, n_iterations, test_mode);
+            run(a, n_iterations, test_mode);
         }
     }
 }

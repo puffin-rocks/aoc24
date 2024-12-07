@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use itertools::izip;
-use crate::utils::{assert_display, no_solution_message, Label, Solve};
+use crate::utils::{assert_display, Label, Solve};
 
 pub(crate) struct Advent {
     label: Label,

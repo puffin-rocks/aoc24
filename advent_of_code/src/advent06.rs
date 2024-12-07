@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use crate::geometry::{Canvas, Direction, Point2D, Vector};
-use crate::utils::{Solve, Label, no_solution_message, assert_display};
+use crate::utils::{Solve, Label, assert_display};
 use rayon::prelude::*;
 
 pub(crate) struct Advent {
