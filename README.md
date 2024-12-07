@@ -4,7 +4,8 @@ Solutions to AoC24 in rust
 Posible arguments of cargo run:
 - -t {true or false}: if runs with test input, default = false
 - -i {0..}: number of iterations to estimate computation time (0 means no estimation), default = 0
-- -d {1..25}: from which day to compute puzzles, default = 1
+- -fd {1..25}: from which day to compute puzzles, default = 1
+- -ld {1..25}: to which day to compute puzzles, default = 25
 
 What to learn:
 - **Day 01**. Vec, HashMap, itertools:izip, Result<T,E>; concepts of trait and dynamic dispatch; reading from a file

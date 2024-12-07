@@ -3,3 +3,4 @@ advent_of_code/.idea/.gitignore
 advent_of_code/.idea/advent_of_code.iml
 advent_of_code/.idea/
 advent_of_code/template.txt
+advent_of_code/advent06_no_par_iter.rs

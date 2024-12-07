@@ -87,6 +87,7 @@ fn main() {
     let mut n_iterations = 0;
     let mut test_mode = false;
     let mut first_day: u8 = 1;
+    let mut last_day: u8 = 25;
 
     let args: Vec<String> = env::args().collect();
     let mut itr = args.iter().skip(1);
@@ -95,13 +96,15 @@ fn main() {
         match key.as_str() {
             "-t" => test_mode = value.parse::<bool>().unwrap_or(test_mode),
             "-i" => n_iterations = value.parse::<u32>().unwrap_or(n_iterations),
-            "-d" => first_day = value.parse::<u8>().unwrap_or(first_day),
+            "-fd" => first_day = value.parse::<u8>().unwrap_or(first_day),
+            "-ld" => last_day = value.parse::<u8>().unwrap_or(last_day),
             _ => {}
         }
     }
+    last_day = [first_day, last_day].into_iter().max().unwrap();
 
     let mut solutions = collect_solutions();
-    for day in first_day..=25u8 {
+    for day in first_day..=last_day {
         if let Some(a) = solutions.get_mut(&day) {
             run(a, n_iterations, test_mode);
         }
