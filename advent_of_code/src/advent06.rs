@@ -23,16 +23,28 @@ fn follow_path(
     width: usize,
     height: usize,
     obstacles: &HashSet<Point2D>,
-) -> (HashSet<Vector>, bool) {
-    let mut path: HashSet<Vector> = HashSet::new();
+    ordered_path: Option<&[Vector]>, // Optional parameter
+) -> (Vec<Vector>, bool) {
+    let mut path: Vec<Vector> = Vec::new();
+    let mut path_set: HashSet<Vector> = HashSet::new();
+    let (ordered_path_set, push_to_path) =
+        if let Some(ordered_path) = ordered_path {
+        (ordered_path.iter().collect(), false)
+    } else {
+        (HashSet::new(), true)
+    };
     let mut vector = Vector::new(current_direction, current_location);
-    let mut is_out_of_bounds: bool = true;
+    let mut is_out_of_bounds = true;
+
     loop {
         let next_location = vector.get_point(1);
         if next_location.is_out_of_bounds(width, height) {
-            path.insert(vector);
+            if push_to_path {
+                path.push(vector);
+            }
             break;
         }
+
         if obstacles.contains(&next_location) {
             current_direction = match current_direction {
                 Direction::Down => Direction::Right,
@@ -43,17 +55,19 @@ fn follow_path(
             };
             vector.change_direction(current_direction);
         } else {
-            if path.contains(&vector) {
+            if path_set.contains(&vector) || ordered_path_set.contains(&&vector) {
                 is_out_of_bounds = false;
                 break;
             }
-            path.insert(vector);
+            if push_to_path {
+                path.push(vector.clone());
+            }
+            path_set.insert(vector);
             vector = Vector::new(current_direction, next_location);
         }
-    };
+    }
     (path, is_out_of_bounds)
 }
-
 
 impl Solve for Advent {
     fn get_label(&self) -> &Label { &self.label }
@@ -78,7 +92,7 @@ impl Solve for Advent {
             let (w, h) = (*self.canvas.width(), *self.canvas.height());
             let obstacles = self.canvas.locate_element('#');
 
-            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
+            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles, None);
             let points: HashSet<Point2D> = path
                 .iter()
                 .map(|v| *v.anchor())
@@ -99,23 +113,43 @@ impl Solve for Advent {
             let (w, h) = (*self.canvas.width(), *self.canvas.height());
             let obstacles = self.canvas.locate_element('#');
 
-            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles);
+            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles, None);
             if !is_out_of_bounds {
                 return 0;
             }
 
-            let mut points = path.iter().map(|v| *v.anchor()).collect::<HashSet<_>>();
-            points.remove(&guard_location);
+            path
+                .par_windows(2)
+                .filter_map(|window| {
+                    if let [prev_vector, curr_vector] = window {
+                        let start_point = *prev_vector.anchor();
+                        let direction = *prev_vector.direction();
+                        let current_point = *curr_vector.anchor();
 
-            points
-                .par_iter()
-                .filter(|&&p| {
-                    let mut obstacles_upd = obstacles.clone();
-                    obstacles_upd.insert(p);
-                    let is_looping = !follow_path(guard_location, Direction::Down, w, h, &obstacles_upd).1;
-                    is_looping
+                        let path_part = &path[..path.iter().position(|x| x == prev_vector).unwrap()];
+
+                        // Check if current_point is already in path_part
+                        if path_part.iter().any(|p| *p.anchor() == current_point) {
+                            return None;
+                        }
+
+                        let mut updated_obstacles = obstacles.clone();
+                        updated_obstacles.insert(current_point);
+
+                        // Check for looping path
+                        let is_looping = !follow_path(start_point, direction, w, h, &updated_obstacles, Some(path_part)).1;
+                        if is_looping {
+                            return Some([current_point].iter().cloned().collect::<HashSet<_>>());
+                        }
+                    }
+                    None
                 })
-                .count()
+                .reduce(HashSet::new, |mut acc, set| {
+                    acc.extend(set);
+                    acc
+                })
+                .len()
+
         });
         assert_display(result,
                        Some(6),
