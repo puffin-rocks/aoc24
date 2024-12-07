@@ -32,6 +32,7 @@ pub(crate) trait Solve
 {
     fn get_label(&self) -> &Label;
     fn get_label_mut(&mut self) -> &mut Label;
+
     fn add_record_from_line(&mut self, _: String) -> Result<(), std::num::ParseIntError> {
         "invalid".parse::<i32>()?;
         Ok(())
@@ -66,6 +67,28 @@ pub fn no_solution_message(verbose: bool, part: u8) -> bool {
         println!("Part {} not solved", part);
     }
     false
+}
+
+pub fn assert_display(result: usize,
+         result_test: Option<usize>,
+         result_prd: usize,
+         verbose: bool,
+         test_mode: bool
+) -> bool{
+    match result_test {
+        Some(result_test) => {
+            assert_eq!(result, match test_mode{
+                true =>  result_test,
+                false => result_prd
+            });
+        },
+        None => assert_eq!(result, result_prd)
+    };
+
+    if verbose {
+        println!("Sum of solvable equations: {}", result);
+    }
+    true
 }
 
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>

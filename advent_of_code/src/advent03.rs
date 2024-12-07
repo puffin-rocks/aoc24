@@ -1,4 +1,4 @@
-use crate::utils::{Solve, Label, no_solution_message};
+use crate::utils::{Solve, Label, no_solution_message, assert_display};
 
 pub(crate) struct Advent {
     label: Label,
@@ -16,7 +16,14 @@ impl Default for Advent {
 }
 
 impl Advent {
-    fn sum_uncorrupted_instructions(&self, always_enabled: bool) -> u32 {
+    fn sum_uncorrupted_instructions(&self,
+                                    always_enabled: bool,
+                                    result_prd: usize,
+                                    verbose: bool,
+                                    part: u8
+    ) -> bool{
+        if !self.label.has_input { return no_solution_message(verbose, part) }
+
         let mut sum = 0;
         let mut enabled = 1;
 
@@ -41,7 +48,7 @@ impl Advent {
                 };
             }
         }
-        sum
+        assert_display(sum as usize, None, result_prd, verbose, false)
     }
 }
 
@@ -62,22 +69,18 @@ impl Solve for Advent {
     }
 
     fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, 1) }
-        let sum = self.sum_uncorrupted_instructions( true);
-        assert_eq!(sum, 187825547);
-        if verbose {
-            println!("Total sum of uncorrupted mul instructions is: {}", sum);
-        }
-        true
+        self.sum_uncorrupted_instructions( true,
+                                                     187825547,
+                                                     verbose,
+                                                     1
+        )
     }
     fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
-        if !self.label.has_input  { return no_solution_message(verbose, 2) }
-        let sum = self.sum_uncorrupted_instructions( false);
-        assert_eq!(sum, 85508223);
-        if verbose {
-            println!("Total sum of uncorrupted enabled mul instructions is: {}", sum);
-        }
-        true
+        self.sum_uncorrupted_instructions( false,
+                                           85508223,
+                                           verbose,
+                                           2
+        )
     }
 }
 

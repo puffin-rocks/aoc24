@@ -1,5 +1,5 @@
 use itertools::izip;
-use crate::utils::{line2vec_i32, Solve, Label, no_solution_message};
+use crate::utils::{line2vec_i32, Solve, Label, no_solution_message, assert_display};
 
 struct Report{
     levels: Vec<i32>,
@@ -83,14 +83,20 @@ impl Default for Advent {
 }
 
 impl Advent {
-    fn count_safe_report(&self, zero_tolerance: bool) -> u32{
+    fn count_safe_report(&self,
+                         zero_tolerance: bool,
+                         result_prd: usize,
+                         verbose: bool,
+                         part: u8
+    ) -> bool{
+        if !self.label.has_input { return no_solution_message(verbose, part) }
         let mut n_safe_reports = 0;
         for r in &self.reports{
             if r.check_safety(zero_tolerance){
                 n_safe_reports+=1;
             }
         }
-        n_safe_reports
+        assert_display(n_safe_reports, None, result_prd, verbose, false)
     }
 }
 
@@ -110,22 +116,18 @@ impl Solve for Advent {
     }
 
     fn compute_part1_answer(&self, verbose: bool, _: bool) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, 1) }
-        let n_safe_reports = self.count_safe_report(true);
-        assert_eq!(n_safe_reports, 224);
-        if verbose {
-            println!("Number of save reports (zero tolerance) is: {}", n_safe_reports);
-        }
-        true
+        self.count_safe_report(true,
+                               224,
+                               verbose,
+                               1
+        )
     }
 
     fn compute_part2_answer(&self, verbose: bool, _: bool) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, 2) }
-        let n_safe_reports = self.count_safe_report(false);
-        assert_eq!(n_safe_reports, 293);
-        if verbose {
-            println!("Number of save reports (single bad level) is: {}", n_safe_reports);
-        }
-        true
+        self.count_safe_report(false,
+                               293,
+                               verbose,
+                               2
+        )
     }
 }

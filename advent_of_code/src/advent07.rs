@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap};
-use crate::utils::{Solve, Label, no_solution_message};
+use crate::utils::{Solve, Label, no_solution_message, assert_display};
 use rayon::prelude::*;
 
 enum Convertable {
@@ -110,7 +110,8 @@ impl Default for Advent {
 }
 
 impl Advent{
-    fn solve(&self, convertable: fn((usize, usize))->Convertable,
+    fn solve(&self,
+             convertable: fn((usize, usize))->Convertable,
              result_test: usize,
              result_prd: usize,
              verbose: bool,
@@ -127,14 +128,7 @@ impl Advent{
             .map(|e|{e.lhs})
             .sum::<usize>();
 
-        assert_eq!(result, match test_mode{
-            true =>  result_test,
-            false => result_prd
-        });
-        if verbose {
-            println!("Sum of solvable equations: {}", result);
-        }
-        true
+        assert_display(result, Some(result_test), result_prd, verbose, test_mode)
     }
 }
 

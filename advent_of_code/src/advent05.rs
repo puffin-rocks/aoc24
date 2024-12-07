@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use crate::utils::{Solve, Label, no_solution_message};
+use crate::utils::{Solve, Label, no_solution_message, assert_display};
 
 #[derive(Debug, PartialEq, Clone)]
 struct Page {
@@ -74,22 +74,31 @@ impl Default for Advent {
 }
 
 impl Advent {
-    fn sum_middle_pages(&self, skip_correctly_ordered: bool, fix_uncorrectly_ordered: bool) -> usize{
-        self.updates.iter().map(|update| {
+    fn sum_middle_pages(&self,
+                        skip_correctly_ordered: bool,
+                        fix_incorrectly_ordered: bool,
+                        result_test: usize,
+                        result_prd: usize,
+                        verbose: bool,
+                        test_mode: bool,
+                        part: u8) -> bool{
+        if !self.label.has_input { return no_solution_message(verbose, part) }
+        let sum = self.updates.iter().map(|update| {
             let update_len = update.len();
             let middle = update_len / 2;
             let is_ordered = update.windows(2).all(|w| w[0] < w[1]);
 
             if is_ordered && !skip_correctly_ordered {
                 update[middle].number
-            } else if !is_ordered && fix_uncorrectly_ordered {
+            } else if !is_ordered && fix_incorrectly_ordered {
                 let mut sorted_update = update.clone();
                 sorted_update.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
                 sorted_update[middle].number
             } else {
                 0
             }
-        }).sum()
+        }).sum();
+        assert_display(sum, Some(result_test), result_prd, verbose, test_mode)
     }
 }
 
@@ -124,28 +133,24 @@ impl Solve for Advent {
     }
 
     fn compute_part1_answer(&self, verbose: bool, test_mode: bool) -> bool{
-        if !self.label.has_input { return no_solution_message(verbose, 1) }
-        let sum = self.sum_middle_pages(false,false);
-        assert_eq!(sum, match test_mode{
-            true => 143,
-            false => 3608
-        });
-        if verbose {
-            println!("Sum of middle pages of correctly ordered updates: {}", sum);
-        }
-        true
+        self.sum_middle_pages(false,
+                                        false,
+                                        143,
+                                        3608,
+                                        verbose,
+                                        test_mode,
+                                        1
+        )
     }
 
     fn compute_part2_answer(&self, verbose: bool, test_mode: bool) -> bool{
-        if !self.label.has_input  { return no_solution_message(verbose, 2) }
-        let sum = self.sum_middle_pages(true,true);
-        assert_eq!(sum, match test_mode{
-            true => 123,
-            false => 4922
-        });
-        if verbose {
-            println!("Sum of middle pages of re-ordered updates: {}", sum);
-        }
-        true
+        self.sum_middle_pages(true,
+                                        true,
+                                        123,
+                                        4922,
+                                        verbose,
+                                        test_mode,
+                                        2
+        )
     }
 }
