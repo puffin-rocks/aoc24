@@ -147,40 +147,37 @@ impl Add<&Point2D> for Point2D {
 }
 
 impl Sub<&Point2D> for &Point2D {
+    type Output = Direction;
+
+    fn sub(self, other: &Point2D) -> Direction {
+        let p = Point2D::new(self.x - other.x, self.y - other.y);
+        Direction::ToPoint(p)
+    }
+}
+
+impl Add<&Direction> for &Point2D {
     type Output = Point2D;
 
-    fn sub(self, other: &Point2D) -> Point2D {
+    fn add(self, other: &Direction) -> Point2D {
+        let p = other.to_point();
         Point2D {
-            x: self.x - other.x,
-            y: self.y - other.y,
+            x: self.x + p.x,
+            y: self.y + p.y,
         }
     }
 }
 
-impl Add<&Point2D> for &Point2D {
-    type Output = Point2D;
-
-    fn add(self, other: &Point2D) -> Point2D {
-        Point2D {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-}
-
-impl<T> Mul<T> for &Point2D
+impl<T> Mul<T> for &Direction
 where
     T: Copy + TryInto<isize>,
     <T as TryInto<isize>>::Error: std::fmt::Debug,
 {
-    type Output = Point2D;
+    type Output = Direction;
 
-    fn mul(self, rhs: T) -> Point2D {
+    fn mul(self, rhs: T) -> Direction {
         let rhs = rhs.try_into().expect("Conversion failed");
-        Point2D {
-            x: self.x * rhs,
-            y: self.y * rhs,
-        }
+        let p = self.to_point();
+        Direction::ToPoint(Point2D::new(p.x * rhs, p.y * rhs))
     }
 }
 
@@ -217,11 +214,11 @@ impl Vector {
         self.anchor.is_out_of_bounds(width, height) | self.get_point(length-1).is_out_of_bounds(width, height)
     }
     pub(crate) fn get_point(&self, length: usize) -> Point2D{
-        &self.direction.to_point() *length + &self.anchor
+        &self.anchor + &(&self.direction *length)
     }
 
-    pub(crate) fn shift(&self, p: &Point2D) -> Vector {
-        Vector::new(self.direction, p + &self.anchor)
+    pub(crate) fn shift(&self, d: &Direction) -> Vector {
+        Vector::new(self.direction, &self.anchor + d)
     }
 
     #[allow(dead_code)]

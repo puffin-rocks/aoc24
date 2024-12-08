@@ -1,7 +1,7 @@
 use std::collections::{BTreeSet};
 use std::rc::Rc;
 use crate::geometry::{Canvas, Point2D};
-use crate::utils::{Solve, Label, assert_display, read_lines};
+use crate::utils::{Solve, Label, assert_display};
 
 pub(crate) struct Advent {
     label: Label,
@@ -64,7 +64,7 @@ impl Advent {
                 }
             }
             if !one_step {
-                antinodes.extend(antennas_set.iter().cloned());
+                antinodes.extend(antennas);
             }
         }
         assert_display(antinodes.len(), Some(result_test), result_prd, "Number of antinodes", test_mode)
@@ -76,20 +76,6 @@ impl Solve for Advent {
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
     fn get_canvas_mut(&mut self) -> Option<&mut Canvas>{
         Some(&mut self.canvas)
-    }
-
-    fn read_input(&mut self, test_mode: bool) -> Result<(), std::num::ParseIntError>{
-        let filename = self.get_label().get_puzzle_input_path(test_mode);
-
-        if let Ok(lines) = read_lines(filename) {
-            for line in lines.flatten() {
-                self.add_record_from_line(line)?;
-            }
-            // self.canvas.iter().for_each(|p| self.antennas.entry(*self.canvas.get_element(&p)).or_insert_with(Vec::new).push(p));
-            // self.antennas.remove(&'.');
-            self.get_label_mut().has_input = true;
-        }
-        Ok(())
     }
 
     fn info(&self) -> Result<(), String> {

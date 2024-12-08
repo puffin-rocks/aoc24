@@ -116,14 +116,15 @@ impl Solve for Advent {
             let (&w, &h) = self.canvas.shape();
             assert_eq!(w, h); //via rotation of points of original canvas works only for squares
             for p in self.canvas.iter() {
+                let d = Direction::ToPoint(p);
                 for n_rotations in 0..4 {
                     let p_rotated = p.rotate90(n_rotations, w, h);
                     if first_letter != self.canvas.get_element(&p_rotated) {
                         continue;
                     }
 
-                    if self.check_match(&base_loc.shift(&p), Some(&cut_word), Some(n_rotations)) &&
-                        self.check_match(&supp_loc.shift(&p), Some(&cut_word), Some(n_rotations)) {
+                    if self.check_match(&base_loc.shift(&d), Some(&cut_word), Some(n_rotations)) &&
+                        self.check_match(&supp_loc.shift(&d), Some(&cut_word), Some(n_rotations)) {
                         count += 1;
                     }
                 }
@@ -148,7 +149,7 @@ impl Solve for Advent {
                             Direction::UpLeft => Vector::new(Direction::UpRight, Point2D::new(-2, 0)),
                             Direction::DownLeft => Vector::new(Direction::UpLeft, Point2D::new(0, -2)),
                             _ => Vector::null(),
-                        }.shift(&p);
+                        }.shift(&Direction::ToPoint(p));
 
                         if self.check_match(&supp_loc, Some(&cut_word), None) {
                             count += 1;
