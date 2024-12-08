@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BTreeSet, HashSet};
 use crate::geometry::{Canvas, Direction, Point2D, Vector};
 use crate::utils::{Solve, Label, assert_display};
 use rayon::prelude::*;
@@ -22,7 +22,7 @@ fn follow_path(
     mut current_direction: Direction,
     width: usize,
     height: usize,
-    obstacles: &HashSet<Point2D>,
+    obstacles: &BTreeSet<Point2D>,
     ordered_path: Option<&[Vector]>, // Optional parameter
 ) -> (Vec<Vector>, bool) {
     let mut path: Vec<Vector> = Vec::new();
@@ -73,31 +73,33 @@ impl Solve for Advent {
     fn get_label(&self) -> &Label { &self.label }
     fn get_label_mut(&mut self) -> &mut Label { &mut self.label }
 
-    fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError> {
-        self.canvas.add_row(line.chars().collect());
-        Ok(())
+    fn get_canvas_mut(&mut self) -> Option<&mut Canvas>{
+        Some(&mut self.canvas)
     }
 
     fn info(&self) -> Result<(), String>{
         self.check_input(None)?;
-        println!("Canvas height: {}", self.canvas.height());
-        println!("Canvas width: {}", self.canvas.width());
-        println!("Location of the quard is {:?}", self.canvas.locate_element(&'^').iter().next().expect("Guard not found"));
+        println!("Canvas shape: {:?}", self.canvas.shape());
+        println!("Location of the quard is {:?}", self.canvas.try_locate_element(&'^').iter().next().expect("Guard not found"));
         Ok(())
     }
 
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String> {
         self.check_input(Some(1))?;
-        let result = self.canvas.locate_element(&'^').iter().next().copied().map_or(0, |guard_location| {
-            let (w, h) = (*self.canvas.width(), *self.canvas.height());
-            let obstacles = self.canvas.locate_element(&'#');
-
-            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles, None);
-            let points: HashSet<Point2D> = path
-                .iter()
-                .map(|v| *v.anchor())
-                .collect();
-            if is_out_of_bounds { points.len() } else { 0 }
+        let result = self.canvas.try_locate_element(&'^')?.iter().next().map_or(0, |guard_location| {
+            let (&w, &h) = self.canvas.shape();
+            if let Ok(obstacles) = self.canvas.try_locate_element(&'#') {
+                let obstacles: BTreeSet<Point2D> = obstacles.iter().map(|rc| (**rc).clone()).collect();
+                let (path, is_out_of_bounds) = follow_path(**guard_location, Direction::Down, w, h, &obstacles , None);
+                let points: HashSet<Point2D> = path
+                    .iter()
+                    .map(|v| *v.anchor())
+                    .collect();
+                if is_out_of_bounds { points.len() } else { 0 }
+            }
+            else{
+                0
+            }
         });
         assert_display(result,
                        Some(41),
@@ -109,47 +111,48 @@ impl Solve for Advent {
 
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String> {
         self.check_input(Some(2))?;
-        let result = self.canvas.locate_element(&'^').iter().next().copied().map_or(0, |guard_location| {
-            let (w, h) = (*self.canvas.width(), *self.canvas.height());
-            let obstacles = self.canvas.locate_element(&'#');
+        let result = self.canvas.try_locate_element(&'^')?.iter().next().map_or(0, |guard_location| {
+            let (&w, &h) = self.canvas.shape();
+            if let Ok(obstacles) = self.canvas.try_locate_element(&'#') {
+                let obstacles: BTreeSet<Point2D> = obstacles.iter().map(|rc| (**rc).clone()).collect();
+                let (path, is_out_of_bounds) = follow_path(**guard_location, Direction::Down, w, h, &obstacles, None);
+                if !is_out_of_bounds {
+                    return 0;
+                }
 
-            let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles, None);
-            if !is_out_of_bounds {
-                return 0;
+                path
+                    .par_windows(2)
+                    .filter_map(|window| {
+                        if let [prev_vector, curr_vector] = window {
+                            let start_point = *prev_vector.anchor();
+                            let direction = *prev_vector.direction();
+                            let current_point = *curr_vector.anchor();
+
+                            let path_part = &path[..path.iter().position(|x| x == prev_vector).unwrap()];
+
+                            // Check if current_point is already in path_part
+                            if path_part.iter().any(|p| *p.anchor() == current_point) {
+                                return None;
+                            }
+                            let mut updated_obstacles = obstacles.clone();
+                            updated_obstacles.insert(current_point);
+
+                            // Check for looping path
+                            let is_looping = !follow_path(start_point, direction, w, h, &updated_obstacles, Some(path_part)).1;
+                            if is_looping {
+                                return Some([current_point].iter().cloned().collect::<HashSet<_>>());
+                            }
+                        }
+                        None
+                    })
+                    .reduce(HashSet::new, |mut acc, set| {
+                        acc.extend(set);
+                        acc
+                    })
+                    .len()
+            }else{
+                0
             }
-
-            path
-                .par_windows(2)
-                .filter_map(|window| {
-                    if let [prev_vector, curr_vector] = window {
-                        let start_point = *prev_vector.anchor();
-                        let direction = *prev_vector.direction();
-                        let current_point = *curr_vector.anchor();
-
-                        let path_part = &path[..path.iter().position(|x| x == prev_vector).unwrap()];
-
-                        // Check if current_point is already in path_part
-                        if path_part.iter().any(|p| *p.anchor() == current_point) {
-                            return None;
-                        }
-
-                        let mut updated_obstacles = obstacles.clone();
-                        updated_obstacles.insert(current_point);
-
-                        // Check for looping path
-                        let is_looping = !follow_path(start_point, direction, w, h, &updated_obstacles, Some(path_part)).1;
-                        if is_looping {
-                            return Some([current_point].iter().cloned().collect::<HashSet<_>>());
-                        }
-                    }
-                    None
-                })
-                .reduce(HashSet::new, |mut acc, set| {
-                    acc.extend(set);
-                    acc
-                })
-                .len()
-
         });
         assert_display(result,
                        Some(6),

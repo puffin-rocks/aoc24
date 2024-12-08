@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
+use crate::geometry::Canvas;
 
 pub(crate) const PUZZLE_INPUT: &str  = "src/puzzle_input/";
 
@@ -33,6 +34,10 @@ pub(crate) trait Solve
     fn get_label(&self) -> &Label;
     fn get_label_mut(&mut self) -> &mut Label;
 
+    fn get_canvas_mut(&mut self) -> Option<&mut Canvas>{
+        None
+    }
+
     fn apply_bruteforce(&mut self){}
 
     fn check_input(&self, part: Option<u8>) -> Result<(), String> {
@@ -47,8 +52,15 @@ pub(crate) trait Solve
             }
         }
     }
-    fn add_record_from_line(&mut self, _: String) -> Result<(), std::num::ParseIntError> {
-        "invalid".parse::<i32>()?;
+    fn add_record_from_line(&mut self, line : String) -> Result<(), std::num::ParseIntError> {
+        match self.get_canvas_mut(){
+            None => {
+                "invalid".parse::<i32>()?;
+            },
+            Some(canvas) => {
+                canvas.add_row(line.chars().collect());
+            }
+        };
         Ok(())
     }
 

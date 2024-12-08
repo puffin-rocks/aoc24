@@ -22,8 +22,7 @@ impl Default for Advent {
 
 impl Advent{
     fn check_match(&self, location: &Vector, word: Option<&Vec<char>>, n_rotations: Option<u8>) -> bool{
-        let height = *self.canvas.height();
-        let width = *self.canvas.width();
+        let (&width, &height) = self.canvas.shape();
         let word = word.unwrap_or(&self.word);
         let n_chars = word.len();
 
@@ -36,7 +35,7 @@ impl Advent{
             if let Some(n) = n_rotations {
                 p = p.rotate90(n, width, height);
             }
-            if self.canvas.get_element(&p) != ch {
+            if self.canvas.get_element(&p) != Some(ch) {
                 return false;
             }
         }
@@ -48,24 +47,23 @@ impl Solve for Advent {
     fn get_label(&self) -> &Label{ &self.label }
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
 
-    fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError> {
-        self.canvas.add_row(line.chars().collect());
-        Ok(())
+    fn get_canvas_mut(&mut self) -> Option<&mut Canvas>{
+        Some(&mut self.canvas)
     }
+
     fn info(&self) -> Result<(), String>{
         self.check_input(None)?;
-        println!("Canvas height: {}", self.canvas.height());
-        println!("Canvas width: {}", self.canvas.width());
+        println!("Canvas shape: {:?}", self.canvas.shape());
         Ok(())
     }
 
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(1))?;
-        let first_letter = &self.word[0];
+        let first_letter = Some(&self.word[0]);
         let mut count = 0;
         if self.solve_via_rotation{
             //canvas rotation (slower)
-            let (w, h) = (*self.canvas.width(), *self.canvas.height());
+            let (&w, &h) = self.canvas.shape();
             assert_eq!(w, h); //via rotation of points of original canvas works only for squares
             for p in self.canvas.iter() {
                 for n_rotations in 0..4 {
@@ -108,14 +106,14 @@ impl Solve for Advent {
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
         let cut_word = self.word[1..].to_vec();
-        let first_letter = &cut_word[0];
+        let first_letter = Some(&cut_word[0]);
         let mut count = 0;
 
         if self.solve_via_rotation {
             //canvas rotation (slower)
             let base_loc = Vector::new(Direction::UpRight, Point2D::new(0, 0));
             let supp_loc = Vector::new(Direction::DownRight, Point2D::new(0, 2));
-            let (w, h) = (*self.canvas.width(), *self.canvas.height());
+            let (&w, &h) = self.canvas.shape();
             assert_eq!(w, h); //via rotation of points of original canvas works only for squares
             for p in self.canvas.iter() {
                 for n_rotations in 0..4 {

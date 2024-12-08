@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul, Sub};
 use std::rc::Rc;
@@ -265,12 +265,10 @@ impl Default for Canvas {
 }
 
 impl Canvas {
-    pub(crate) fn width(&self) -> &usize{
-        &self.width
+    pub(crate) fn shape(&self) -> (&usize, &usize){
+        (&self.width, &self.height)
     }
-    pub(crate) fn height(&self) -> &usize{
-        &self.height
-    }
+
     pub(crate) fn add_row(&mut self, row: Vec<char>){
         if self.width>0 {assert_eq!(row.len(), self.width)}
         else {self.width = row.len()}
@@ -287,14 +285,27 @@ impl Canvas {
         }
         self.rows.push(rc_row);
     }
-    pub(crate) fn get_element(&self, point: &Point2D) -> &char{
-        &self.rows[point.y as usize][point.x as usize]
+    pub(crate) fn get_element(&self, point: &Point2D) -> Option<&char>{
+        if point.is_out_of_bounds(self.width, self.height){
+            None
+        }else {
+            Some(&self.rows[point.y as usize][point.x as usize])
+        }
     }
 
-    pub(crate) fn locate_element(&self, el: &char) -> HashSet<Point2D>{
-        self.iter()
-            .filter(|p| self.get_element(p) == el)
-            .collect()
+    pub(crate) fn get_element_set(&self) -> BTreeSet<Rc<char>>{
+        self.elements.keys().cloned().collect()
+    }
+
+    pub(crate) fn elements(&self) -> &BTreeMap<Rc<char>, BTreeSet<Rc<Point2D>>>{
+        &self.elements
+    }
+
+    pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Rc<Point2D>>, String>{
+        match self.elements.get(el){
+            None => Err(format!("Cannot locate {}", el)),
+            Some(locations) => {Ok(locations)}
+        }
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = Point2D>+ '_  {
