@@ -1,5 +1,3 @@
-use std::time::Instant;
-use rand::Rng;
 use crate::utils::{Solve, Label, assert_display};
 use crate::geometry::{Point2D, Direction, Vector, Canvas};
 
@@ -58,28 +56,6 @@ impl Solve for Advent {
         self.check_input(None)?;
         println!("Canvas height: {}", self.canvas.height());
         println!("Canvas width: {}", self.canvas.width());
-
-        // let (w, h) = (*self.canvas.width() as f64, *self.canvas.height() as f64);
-        //
-        // let mut rng = rand::thread_rng(); // Create a random number generator
-        // let n_iterations = 1_000_000;
-        //
-        // let start = Instant::now();
-        // for _ in 0..n_iterations {
-        //     let x = (rng.gen::<f64>() * w).floor() as isize;
-        //     let y = (rng.gen::<f64>() * h).floor() as isize;
-        //     self.canvas.get_element(&Point2D::new(x,y));
-        // }
-        // println!("get element {:?}", start.elapsed()/n_iterations);
-        //
-        // let start = Instant::now();
-        // for _ in 0..n_iterations {
-        //     let x = (rng.gen::<f64>() * w).floor() as isize;
-        //     let y = (rng.gen::<f64>() * h).floor() as isize;
-        //     self.canvas.get_element_from_map(&Point2D::new(x,y));
-        // }
-        // println!("get element from map {:?}", start.elapsed()/n_iterations);
-
         Ok(())
     }
 
