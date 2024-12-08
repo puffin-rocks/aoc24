@@ -1,4 +1,5 @@
-use std::collections::HashSet;
+use std::cmp::Ordering;
+use std::collections::{HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul, Sub};
 
@@ -12,7 +13,8 @@ pub(crate) enum Direction{
     DownLeft,
     Left,
     UpLeft,
-    None
+    None,
+    ToPoint(Point2D)
 }
 
 impl Direction {
@@ -27,7 +29,8 @@ impl Direction {
             Direction::DownLeft => Direction::UpRight,
             Direction::Left => Direction::Right,
             Direction::UpLeft => Direction::DownRight,
-            Direction::None => Direction::None
+            Direction::None => Direction::None,
+            Direction::ToPoint(p) => Direction::ToPoint(Point2D::new(-p.x, -p.y))
         }
     }
     pub(crate) fn to_tuple(&self) -> (isize, isize) {
@@ -41,21 +44,36 @@ impl Direction {
             Direction::Left => (-1, 0),
             Direction::UpLeft => (-1, 1),
             Direction::None => (0, 0),
+            Direction::ToPoint(p) => (p.x, p.y)
         }
     }
 
     pub(crate) fn to_point(&self) -> Point2D{
-        let (dx, dy) = self.to_tuple();
-        Point2D::new(dx,dy)
+        match self{
+            Direction::ToPoint(p) => *p,
+            _ => {
+                let (dx, dy) = self.to_tuple();
+                Point2D::new(dx,dy)
+            }
+        }
     }
 
-    pub(crate) fn list_valid() -> [Direction; 8]{
+    pub(crate) fn diagonal() -> [Direction; 4]{
+        [Direction::UpRight, Direction::DownRight,
+            Direction::DownLeft, Direction::UpLeft]
+    }
+
+    pub(crate) fn _base() -> [Direction; 8]{
         [Direction::Up, Direction::UpRight, Direction::Right, Direction::DownRight,
             Direction::Down, Direction::DownLeft, Direction::Left, Direction::UpLeft]
     }
+
+    pub(crate) fn base() -> [Direction; 4]{
+        [Direction::Up,  Direction::Right, Direction::Down, Direction::Left]
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub(crate) struct Point2D {
     x: isize,
     y: isize
@@ -101,6 +119,13 @@ impl Hash for Point2D {
 }
 
 impl Eq for Point2D {}
+
+impl Ord for Point2D {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
+}
+
 
 impl Add<&Point2D> for Point2D {
     type Output = Point2D;
@@ -180,10 +205,8 @@ impl Vector {
     }
 
     pub(crate) fn is_out_of_bounds(&self, length: usize, width: usize, height: usize) -> bool {
-        for i in 0..length{
-            if self.get_point(i).is_out_of_bounds(width, height) {return true}
-        }
-        false
+        //either start or end of vector is out of bounds
+        self.anchor.is_out_of_bounds(width, height) | self.get_point(length-1).is_out_of_bounds(width, height)
     }
     pub(crate) fn get_point(&self, length: usize) -> Point2D{
         &self.direction.to_point() *length + &self.anchor
@@ -213,7 +236,7 @@ impl Hash for Vector {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct Canvas{
+pub(crate) struct Canvas {
     rows: Vec<Vec<char>>,
     width: usize,
     height: usize
@@ -242,11 +265,11 @@ impl Canvas {
         self.rows.push(row);
         self.height+=1;
     }
-    pub(crate) fn get_element(&self, point: &Point2D) -> char{
-        self.rows[point.y as usize][point.x as usize]
+    pub(crate) fn get_element(&self, point: &Point2D) -> &char{
+        &self.rows[point.y as usize][point.x as usize]
     }
 
-    pub(crate) fn locate_element(&self, el: char) -> HashSet<Point2D>{
+    pub(crate) fn locate_element(&self, el: &char) -> HashSet<Point2D>{
         self.iter()
             .filter(|p| self.get_element(p) == el)
             .collect()

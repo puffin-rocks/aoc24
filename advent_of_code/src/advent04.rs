@@ -1,3 +1,5 @@
+use std::time::Instant;
+use rand::Rng;
 use crate::utils::{Solve, Label, assert_display};
 use crate::geometry::{Point2D, Direction, Vector, Canvas};
 
@@ -36,7 +38,7 @@ impl Advent{
             if let Some(n) = n_rotations {
                 p = p.rotate90(n, width, height);
             }
-            if &self.canvas.get_element(&p) != ch {
+            if self.canvas.get_element(&p) != ch {
                 return false;
             }
         }
@@ -56,12 +58,34 @@ impl Solve for Advent {
         self.check_input(None)?;
         println!("Canvas height: {}", self.canvas.height());
         println!("Canvas width: {}", self.canvas.width());
+
+        // let (w, h) = (*self.canvas.width() as f64, *self.canvas.height() as f64);
+        //
+        // let mut rng = rand::thread_rng(); // Create a random number generator
+        // let n_iterations = 1_000_000;
+        //
+        // let start = Instant::now();
+        // for _ in 0..n_iterations {
+        //     let x = (rng.gen::<f64>() * w).floor() as isize;
+        //     let y = (rng.gen::<f64>() * h).floor() as isize;
+        //     self.canvas.get_element(&Point2D::new(x,y));
+        // }
+        // println!("get element {:?}", start.elapsed()/n_iterations);
+        //
+        // let start = Instant::now();
+        // for _ in 0..n_iterations {
+        //     let x = (rng.gen::<f64>() * w).floor() as isize;
+        //     let y = (rng.gen::<f64>() * h).floor() as isize;
+        //     self.canvas.get_element_from_map(&Point2D::new(x,y));
+        // }
+        // println!("get element from map {:?}", start.elapsed()/n_iterations);
+
         Ok(())
     }
 
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(1))?;
-        let first_letter = self.word[0];
+        let first_letter = &self.word[0];
         let mut count = 0;
         if self.solve_via_rotation{
             //canvas rotation (slower)
@@ -89,7 +113,7 @@ impl Solve for Advent {
                     continue;
                 }
 
-                for d in Direction::list_valid() {
+                for d in [&Direction::base()[..], &Direction::diagonal()[..]].concat() {
                     let shifted_loc = Vector::new(d, p);
                     if self.check_match(&shifted_loc, None, None) {
                         count += 1;
@@ -108,7 +132,7 @@ impl Solve for Advent {
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
         let cut_word = self.word[1..].to_vec();
-        let first_letter = cut_word[0];
+        let first_letter = &cut_word[0];
         let mut count = 0;
 
         if self.solve_via_rotation {

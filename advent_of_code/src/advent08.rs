@@ -80,7 +80,7 @@ impl Solve for Advent {
             for line in lines.flatten() {
                 self.add_record_from_line(line)?;
             }
-            self.canvas.iter().for_each(|p| self.antennas.entry(self.canvas.get_element(&p)).or_insert_with(Vec::new).push(p));
+            self.canvas.iter().for_each(|p| self.antennas.entry(*self.canvas.get_element(&p)).or_insert_with(Vec::new).push(p));
             self.antennas.remove(&'.');
             self.get_label_mut().has_input = true;
         }

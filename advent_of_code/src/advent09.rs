@@ -17,7 +17,7 @@ impl Solve for Advent {
     fn get_label(&self) -> &Label{ &self.label }
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
 
-    fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError> {
+    fn add_record_from_line(&mut self, _line: String) -> Result<(), std::num::ParseIntError> {
         "invalid".parse::<i32>()?;
         Ok(())
     }

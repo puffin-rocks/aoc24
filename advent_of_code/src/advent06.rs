@@ -82,15 +82,15 @@ impl Solve for Advent {
         self.check_input(None)?;
         println!("Canvas height: {}", self.canvas.height());
         println!("Canvas width: {}", self.canvas.width());
-        println!("Location of the quard is {:?}", self.canvas.locate_element('^').iter().next().expect("Guard not found"));
+        println!("Location of the quard is {:?}", self.canvas.locate_element(&'^').iter().next().expect("Guard not found"));
         Ok(())
     }
 
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String> {
         self.check_input(Some(1))?;
-        let result = self.canvas.locate_element('^').iter().next().copied().map_or(0, |guard_location| {
+        let result = self.canvas.locate_element(&'^').iter().next().copied().map_or(0, |guard_location| {
             let (w, h) = (*self.canvas.width(), *self.canvas.height());
-            let obstacles = self.canvas.locate_element('#');
+            let obstacles = self.canvas.locate_element(&'#');
 
             let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles, None);
             let points: HashSet<Point2D> = path
@@ -109,9 +109,9 @@ impl Solve for Advent {
 
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String> {
         self.check_input(Some(2))?;
-        let result = self.canvas.locate_element('^').iter().next().copied().map_or(0, |guard_location| {
+        let result = self.canvas.locate_element(&'^').iter().next().copied().map_or(0, |guard_location| {
             let (w, h) = (*self.canvas.width(), *self.canvas.height());
-            let obstacles = self.canvas.locate_element('#');
+            let obstacles = self.canvas.locate_element(&'#');
 
             let (path, is_out_of_bounds) = follow_path(guard_location, Direction::Down, w, h, &obstacles, None);
             if !is_out_of_bounds {
