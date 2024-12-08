@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Sub};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Direction{
@@ -109,6 +109,17 @@ impl Add<&Point2D> for Point2D {
         Point2D {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub<&Point2D> for &Point2D {
+    type Output = Point2D;
+
+    fn sub(self, other: &Point2D) -> Point2D {
+        Point2D {
+            x: self.x - other.x,
+            y: self.y - other.y,
         }
     }
 }
