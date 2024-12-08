@@ -95,7 +95,7 @@ impl Equation {
         false
     }
 
-    fn try_solve(&self, concat_allowed: bool) -> bool{
+    fn _try_solve(&self, concat_allowed: bool) -> bool{
         if self.rhs.is_empty() {
             return false;
         }
@@ -138,6 +138,41 @@ impl Equation {
             ix+=1;
         }
         result
+    }
+
+
+    fn try_solve(&self, concat_allowed: bool) -> bool {
+        if self.rhs.is_empty() {
+            return false;
+        }
+
+        let n = self.rhs.len();
+        if n == 1 {
+            return self.lhs == self.rhs[0];
+        }
+
+        let mut stack = vec![self.rhs[0]];
+        for &curr_num in &self.rhs[1..] {
+            let mut next_stack = Vec::new();
+
+            for &v in &stack {
+                if v > self.lhs {
+                    continue;
+                }
+
+                if concat_allowed {
+                    let digits = (curr_num as f64).log10().floor() as u32 + 1;
+                    next_stack.push(v * 10_usize.pow(digits) + curr_num);
+                }
+
+                next_stack.push(v * curr_num);
+                next_stack.push(v + curr_num);
+            }
+
+            stack = next_stack;
+        }
+
+        stack.contains(&self.lhs)
     }
 }
 
@@ -185,24 +220,22 @@ impl Advent{
              test_mode: bool,
              part: u8) -> Result<String, String>{
         self.check_input(Some(part))?;
-        let result = {
-            if part == 1 {
+        let result = match part {
+            1 => {
                 if self.use_bruteforce {
                     self.solve_bruteforce(Convertable::Binary)
                 } else {
                     self.solve_stack(false)
                 }
             }
-            else if part == 2 {
+            2 => {
                 if self.use_bruteforce {
                     self.solve_bruteforce(Convertable::Trinary)
                 } else {
                     self.solve_stack(true)
                 }
             }
-            else{
-                return Err(format!("Unknown part {}", part));
-            }
+            _ => return Err(format!("Unknown part {}", part)),
         };
         assert_display(result, Some(result_test), result_prd, "Sum of solvable equations", test_mode)
     }
