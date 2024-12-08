@@ -8,7 +8,6 @@ pub(crate) struct Advent {
     antennas: HashMap<char, Vec<Point2D>>
 }
 
-
 impl Default for Advent {
     fn default() -> Self {
         Self {
@@ -16,6 +15,53 @@ impl Default for Advent {
             canvas: Canvas::default(),
             antennas: HashMap::new()
         }
+    }
+}
+
+impl Advent {
+    fn solve(&self,
+             one_step: bool,
+             result_test: usize,
+             result_prd: usize,
+             test_mode: bool,
+             part: u8) -> Result<String, String>{
+        self.check_input(Some(part))?;
+        let (w, h) = (*self.canvas.width(), *self.canvas.height());
+        let mut antinodes: HashSet<Point2D> = HashSet::new();
+
+        for antenna in self.antennas.values() {
+            let n = antenna.len();
+            if n < 2 {
+                continue;
+            }
+
+            for i in 0..n - 1 {
+                for j in i + 1..n {
+                    let d = &antenna[i] - &antenna[j];
+
+                    for &start in [&antenna[j], &antenna[i]] {
+                        let direction = if start == antenna[j] { 1 } else { -1 };
+                        let mut s = 2;
+
+                        loop {
+                            let p = start + &(&d * (s * direction));
+                            if p.is_out_of_bounds(w, h) {
+                                break;
+                            }
+                            antinodes.insert(p);
+                            s += 1;
+                            if one_step{
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+            if !one_step {
+                antinodes.extend(antenna);
+            }
+        }
+        assert_display(antinodes.len(), Some(result_test), result_prd, "Number of antinodes", test_mode)
     }
 }
 
@@ -49,62 +95,9 @@ impl Solve for Advent {
         Ok(())
     }
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
-        let (w, h) = (*self.canvas.width(), *self.canvas.height());
-        let mut antinodes: HashSet<Point2D> = HashSet::new();
-        for (_, v) in &self.antennas{
-            let n = v.len();
-            if n<2 { continue;}
-            for i in 0..n-1{
-                for j in i+1..n{
-                    let d = &v[i]-&v[j];
-                    for c in [&d*2 + &v[j], &d*-2 + &v[i]] {
-                        if !c.is_out_of_bounds(w, h) {
-                            antinodes.insert(c);
-                        }
-                    }
-                }
-            }
-        }
-        assert_display(antinodes.len(), Some(14), 357, "Number of antinodes", test_mode)
+        self.solve(true, 14, 357, test_mode, 1)
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
-        let (w, h) = (*self.canvas.width(), *self.canvas.height());
-        let mut antinodes: HashSet<Point2D> = HashSet::new();
-        for (_, v) in &self.antennas{
-            let n = v.len();
-            if n<2 { continue;}
-            for i in 0..n-1{
-                for j in i+1..n{
-                    let d = &v[i]-&v[j];
-                    let mut s = 2;
-                    loop{
-                        let p = &d*s + &v[j];
-                        if p.is_out_of_bounds(w, h){
-                            break;
-                        }
-                        else{
-                            antinodes.insert(p);
-                            s+=1;
-                        }
-                    }
-                    let mut s = 2;
-                    loop{
-                        let p = &d*((-1)*s) + &v[i];
-                        if p.is_out_of_bounds(w, h){
-                            break;
-                        }
-                        else{
-                            antinodes.insert(p);
-                            s+=1;
-                        }
-                    }
-                }
-            }
-            for p in v{
-                antinodes.insert(*p);
-            }
-        }
-        println!("{}", antinodes.len());
-        assert_display(antinodes.len(), Some(34), 1266, "Number of antinodes", test_mode)
+        self.solve(false, 34, 1266, test_mode, 2)
     }
 }

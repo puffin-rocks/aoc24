@@ -95,53 +95,7 @@ impl Equation {
         false
     }
 
-    fn _try_solve(&self, concat_allowed: bool) -> bool{
-        if self.rhs.is_empty() {
-            return false;
-        }
-
-        let n = self.rhs.len() - 1;
-        if n == 0 {
-            return self.lhs == self.rhs[0];
-        }
-        let mut stack: Vec<usize> = Vec::new();
-        stack.push(self.rhs[0]);
-        let mut ix = 1;
-
-        let mut result = false;
-        loop{
-            let mut next_stack: Vec<usize> = Vec::new();
-            let curr_num = self.rhs[ix];
-            while let Some(v) = stack.pop() {
-                if !v>self.lhs {
-                    if concat_allowed {
-                        let p: u32 = (curr_num as f64).log(10.0).floor() as u32 + 1;
-                        let u = (v * 10_usize.pow(p)) + curr_num;
-                        next_stack.push(u);
-                    }
-                    let u =v * curr_num;
-                    next_stack.push(u);
-
-                    let u =v + curr_num;
-                    next_stack.push(u);
-                }
-            }
-            stack = next_stack;
-            if ix == n {
-                for s in stack{
-                    if s == self.lhs{
-                        result = true;
-                    }
-                }
-                break;
-            }
-            ix+=1;
-        }
-        result
-    }
-
-
-    fn try_solve(&self, concat_allowed: bool) -> bool {
+    fn try_solve_stack(&self, concat_allowed: bool) -> bool {
         if self.rhs.is_empty() {
             return false;
         }
@@ -208,7 +162,7 @@ impl Advent{
         self.equations
             .par_iter()
             .filter(|&e| {
-                e.try_solve(concat_allowed)
+                e.try_solve_stack(concat_allowed)
             })
             .map(|e|{e.lhs})
             .sum::<usize>()
