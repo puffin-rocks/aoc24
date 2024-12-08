@@ -41,10 +41,12 @@ impl Convertable {
     }
 }
 
+#[derive(Debug)]
 struct Equation{
     lhs: usize,
     rhs: Vec<usize>
 }
+
 
 impl Equation {
     fn new(lhs: usize, rhs: Vec<usize>)->Self{
@@ -54,7 +56,7 @@ impl Equation {
         }
     }
 
-    fn try_solve(&self, convertable: fn((usize, usize))->Convertable) -> bool {
+    fn try_solve_bruteforce(&self, convertable: fn((usize, usize)) ->Convertable) -> bool {
         if self.rhs.is_empty() {
             return false;
         }
@@ -92,11 +94,57 @@ impl Equation {
 
         false
     }
+
+    fn try_solve(&self, concat_allowed: bool) -> bool{
+        if self.rhs.is_empty() {
+            return false;
+        }
+
+        let n = self.rhs.len() - 1;
+        if n == 0 {
+            return self.lhs == self.rhs[0];
+        }
+        let mut stack: Vec<usize> = Vec::new();
+        stack.push(self.rhs[0]);
+        let mut ix = 1;
+
+        let mut result = false;
+        loop{
+            let mut next_stack: Vec<usize> = Vec::new();
+            let curr_num = self.rhs[ix];
+            while let Some(v) = stack.pop() {
+                if !v>self.lhs {
+                    if concat_allowed {
+                        let p: u32 = (curr_num as f64).log(10.0).floor() as u32 + 1;
+                        let u = (v * 10_usize.pow(p)) + curr_num;
+                        next_stack.push(u);
+                    }
+                    let u =v * curr_num;
+                    next_stack.push(u);
+
+                    let u =v + curr_num;
+                    next_stack.push(u);
+                }
+            }
+            stack = next_stack;
+            if ix == n {
+                for s in stack{
+                    if s == self.lhs{
+                        result = true;
+                    }
+                }
+                break;
+            }
+            ix+=1;
+        }
+        result
+    }
 }
 
 pub(crate) struct Advent {
     label: Label,
-    equations: Vec<Equation>
+    equations: Vec<Equation>,
+    do_bruteforce: bool
 }
 
 
@@ -104,28 +152,58 @@ impl Default for Advent {
     fn default() -> Self {
         Self {
             label: Label::new(7),
-            equations: Vec::new()
+            equations: Vec::new(),
+            do_bruteforce: false
         }
     }
 }
 
 impl Advent{
+    fn solve_bruteforce(&self, convertable: fn((usize, usize))->Convertable) -> usize{
+        self.equations
+            .par_iter()
+            .filter(|&e| {
+                e.try_solve_bruteforce(convertable)
+            })
+            .map(|e|{e.lhs})
+            .sum::<usize>()
+    }
+
+    fn solve_stack(&self, concat_allowed: bool) -> usize{
+        self.equations
+            .par_iter()
+            .filter(|&e| {
+                e.try_solve(concat_allowed)
+            })
+            .map(|e|{e.lhs})
+            .sum::<usize>()
+    }
+
     fn solve(&self,
-             convertable: fn((usize, usize))->Convertable,
              result_test: usize,
              result_prd: usize,
              test_mode: bool,
              part: u8) -> Result<String, String>{
-
         self.check_input(Some(part))?;
-        let result = self.equations
-            .par_iter()
-            .filter(|&e| {
-                e.try_solve(convertable)
-            })
-            .map(|e|{e.lhs})
-            .sum::<usize>();
-
+        let result = {
+            if part == 1 {
+                if self.do_bruteforce {
+                    self.solve_bruteforce(Convertable::Binary)
+                } else {
+                    self.solve_stack(false)
+                }
+            }
+            else if part == 2 {
+                if self.do_bruteforce {
+                    self.solve_bruteforce(Convertable::Trinary)
+                } else {
+                    self.solve_stack(true)
+                }
+            }
+            else{
+                return Err(format!("Unknown part {}", part));
+            }
+        };
         assert_display(result, Some(result_test), result_prd, "Sum of solvable equations", test_mode)
     }
 }
@@ -164,19 +242,17 @@ impl Solve for Advent {
     }
 
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
-        self.solve(Convertable::Binary,
-                   3749,
+        self.solve(3749,
                    1582598718861,
                    test_mode,
                    1
-        )
+            )
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
-        self.solve(Convertable::Trinary,
-                   11387,
-                   165278151522644,
-                   test_mode,
-                   2
+        self.solve(11387,
+                              165278151522644,
+                              test_mode,
+                              2
         )
     }
 }
