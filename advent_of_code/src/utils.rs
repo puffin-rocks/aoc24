@@ -33,6 +33,8 @@ pub(crate) trait Solve
     fn get_label(&self) -> &Label;
     fn get_label_mut(&mut self) -> &mut Label;
 
+    fn apply_bruteforce(&mut self){}
+
     fn check_input(&self, part: Option<u8>) -> Result<(), String> {
         if self.get_label().has_input {
             Ok(())

@@ -39,9 +39,13 @@ fn format_duration(duration: Duration) -> String{
     }
 }
 
-fn run(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool) {
+fn run(a: &mut Box<dyn Solve>, n_iterations: u32, test_mode: bool, bruteforce: bool) {
     println!("{}", "-".repeat(50));
     println!(":::Day {}:::", a.get_label().number);
+    if bruteforce {
+        a.apply_bruteforce();
+    }
+
     if let Err(_) = a.read_input(test_mode) {
         println!("Cannot read puzzle input");
         return;
@@ -105,6 +109,7 @@ fn main() {
     let mut test_mode = false;
     let mut first_day: u8 = 1;
     let mut last_day: u8 = 25;
+    let mut bruteforce: bool = false;
 
     let args: Vec<String> = env::args().collect();
     let mut itr = args.iter().skip(1);
@@ -112,6 +117,7 @@ fn main() {
     while let (Some(key), Some(value)) = (itr.next(), itr.next()) {
         match key.as_str() {
             "-t" => test_mode = value.parse::<bool>().unwrap_or(test_mode),
+            "-b" => bruteforce = value.parse::<bool>().unwrap_or(bruteforce),
             "-i" => n_iterations = value.parse::<u32>().unwrap_or(n_iterations),
             "-fd" => first_day = value.parse::<u8>().unwrap_or(first_day),
             "-ld" => last_day = value.parse::<u8>().unwrap_or(last_day),
@@ -123,7 +129,7 @@ fn main() {
     let mut solutions = collect_solutions();
     for day in first_day..=last_day {
         if let Some(a) = solutions.get_mut(&day) {
-            run(a, n_iterations, test_mode);
+            run(a, n_iterations, test_mode, bruteforce);
         }
     }
 }

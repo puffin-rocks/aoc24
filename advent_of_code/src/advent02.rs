@@ -24,10 +24,10 @@ fn check_level_safety(levels: Vec<&i32>) -> (bool, Option<usize>) {
 }
 
 impl Report {
-    fn new(levels: Vec<i32>) -> Self {
+    fn new(levels: Vec<i32>, use_bruteforce: bool) -> Self {
         Self {
             levels,
-            use_bruteforce: false
+            use_bruteforce
         }
     }
 
@@ -70,6 +70,7 @@ impl Report {
 pub(crate) struct Advent {
     label: Label,
     reports: Vec<Report>,
+    use_bruteforce: bool
 }
 
 
@@ -78,6 +79,7 @@ impl Default for Advent {
         Self {
             label: Label::new(2),
             reports: Vec::new(),
+            use_bruteforce: false
         }
     }
 }
@@ -110,8 +112,13 @@ impl Solve for Advent {
     fn get_label(&self) -> &Label{ &self.label }
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
 
+    fn apply_bruteforce(&mut self){
+        println!("...Applying bruteforce...");
+        self.use_bruteforce = true;
+    }
+
     fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError> {
-        self.reports.push(Report::new(line2vec_i32(line)?));
+        self.reports.push(Report::new(line2vec_i32(line)?, self.use_bruteforce));
         Ok(())
     }
 

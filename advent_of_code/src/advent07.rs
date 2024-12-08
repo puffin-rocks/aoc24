@@ -144,7 +144,7 @@ impl Equation {
 pub(crate) struct Advent {
     label: Label,
     equations: Vec<Equation>,
-    do_bruteforce: bool
+    use_bruteforce: bool
 }
 
 
@@ -153,7 +153,7 @@ impl Default for Advent {
         Self {
             label: Label::new(7),
             equations: Vec::new(),
-            do_bruteforce: false
+            use_bruteforce: false
         }
     }
 }
@@ -187,14 +187,14 @@ impl Advent{
         self.check_input(Some(part))?;
         let result = {
             if part == 1 {
-                if self.do_bruteforce {
+                if self.use_bruteforce {
                     self.solve_bruteforce(Convertable::Binary)
                 } else {
                     self.solve_stack(false)
                 }
             }
             else if part == 2 {
-                if self.do_bruteforce {
+                if self.use_bruteforce {
                     self.solve_bruteforce(Convertable::Trinary)
                 } else {
                     self.solve_stack(true)
@@ -211,6 +211,11 @@ impl Advent{
 impl Solve for Advent {
     fn get_label(&self) -> &Label{ &self.label }
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
+
+    fn apply_bruteforce(&mut self){
+        println!("...Applying bruteforce...");
+        self.use_bruteforce = true;
+    }
 
     fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError> {
         if let Some((lhs, rhs)) = line.split_once(": ") {
