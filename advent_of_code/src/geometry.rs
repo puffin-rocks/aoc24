@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
-use std::collections::{HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul, Sub};
+use std::rc::Rc;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Direction{
@@ -63,15 +64,11 @@ impl Direction {
             Direction::DownLeft, Direction::UpLeft]
     }
 
-    pub(crate) fn _base() -> [Direction; 8]{
-        [Direction::Up, Direction::UpRight, Direction::Right, Direction::DownRight,
-            Direction::Down, Direction::DownLeft, Direction::Left, Direction::UpLeft]
-    }
-
     pub(crate) fn base() -> [Direction; 4]{
         [Direction::Up,  Direction::Right, Direction::Down, Direction::Left]
     }
 }
+
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub(crate) struct Point2D {
@@ -79,12 +76,23 @@ pub(crate) struct Point2D {
     y: isize
 }
 
+
 impl Point2D {
-    pub(crate) fn new(x: isize, y: isize)->Self{
-        Self{
-            x,
-            y
-        }
+    pub(crate) fn new<T>(x: T, y: T) -> Self
+    where
+        T: TryInto<isize>,
+    {
+        let x_converted = x.try_into().unwrap_or_else(|_| {
+            eprintln!("Failed to convert x to isize, defaulting to 0");
+            0
+        });
+
+        let y_converted = y.try_into().unwrap_or_else(|_| {
+            eprintln!("Failed to convert y to isize, defaulting to 0");
+            0
+        });
+
+        Self { x: x_converted, y: y_converted }
     }
 
     pub(crate) fn is_out_of_bounds(&self, width: usize, height: usize) -> bool{
@@ -237,7 +245,9 @@ impl Hash for Vector {
 
 #[derive(Debug, Clone)]
 pub(crate) struct Canvas {
-    rows: Vec<Vec<char>>,
+    rows: Vec<Vec<Rc<char>>>,
+    points: Vec<Rc<Point2D>>,
+    elements: BTreeMap<Rc<char>, BTreeSet<Rc<Point2D>>>,
     width: usize,
     height: usize
 }
@@ -246,6 +256,8 @@ impl Default for Canvas {
     fn default() -> Self {
         Self{
             rows:Vec::new(),
+            points: Vec::new(),
+            elements: BTreeMap::new(),
             width:0,
             height:0
         }
@@ -262,8 +274,18 @@ impl Canvas {
     pub(crate) fn add_row(&mut self, row: Vec<char>){
         if self.width>0 {assert_eq!(row.len(), self.width)}
         else {self.width = row.len()}
-        self.rows.push(row);
         self.height+=1;
+        let mut rc_row: Vec<Rc<char>> = Vec::new();
+        for (e, &r) in row.iter().enumerate(){
+            let rc_char = Rc::new(r);
+            let p = Rc::new(Point2D::new(e, self.height-1));
+
+            self.elements.entry(Rc::clone(&rc_char))
+                .or_insert_with(BTreeSet::new).insert(Rc::clone(&p));
+            self.points.push(p);
+            rc_row.push(rc_char);
+        }
+        self.rows.push(rc_row);
     }
     pub(crate) fn get_element(&self, point: &Point2D) -> &char{
         &self.rows[point.y as usize][point.x as usize]
@@ -277,38 +299,94 @@ impl Canvas {
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = Point2D>+ '_  {
         (0..self.width).flat_map(move |i| {
-            (0..self.height).map(move |j| Point2D::new(i as isize, j as isize))
+            (0..self.height).map(move |j| Point2D::new(i, j))
         })
     }
     #[allow(dead_code)]
     pub(crate) fn transpose(&self) -> Self {
-        let rows: Vec<Vec<char>> = (0..self.width).map( |i| {
-                (0..self.height).map(|j| self.rows[j][i]).collect()
+        let rows: Vec<Vec<Rc<char>>> = (0..self.width).map( |i| {
+                (0..self.height).map(|j| Rc::new(*self.rows[j][i])).collect()
         }).collect();
+
+        let points: Vec<Rc<Point2D>> = (0..self.width)
+            .flat_map(|i| {
+                (0..self.height).map(move |j| Rc::new(Point2D::new(j, i)))
+            })
+            .collect();
+
+        let elements: BTreeMap<Rc<char>, BTreeSet<Rc<Point2D>>> = self.elements
+            .iter()
+            .map(|(k, v)| {
+                let transformed_set = v.iter()
+                    .map(|p| Rc::new(Point2D::new(p.y, p.x)))
+                    .collect();
+                (Rc::new(**k), transformed_set)
+            })
+            .collect();
         Self{
             rows,
+            points,
+            elements,
             width: self.height,
             height: self.width
         }
     }
     #[allow(dead_code)]
     pub(crate) fn flip(&self) -> Self {
-        let rows: Vec<Vec<char>> = (0..self.height).map( |i| {
+        let rows: Vec<Vec<Rc<char>>> = (0..self.height).map( |i| {
             self.rows[self.height-i-1].clone()
         }).collect();
+
+        let points: Vec<Rc<Point2D>> = (0..self.width)
+            .flat_map(|i| {
+                (0..self.height).map(move |j| Rc::new(Point2D::new(i , self.height-j-1)))
+            })
+            .collect();
+
+        let elements: BTreeMap<Rc<char>, BTreeSet<Rc<Point2D>>> = self.elements
+            .iter()
+            .map(|(k, v)| {
+                let transformed_set = v.iter()
+                    .map(|p| Rc::new(Point2D::new(p.x, self.height as isize - p.y - 1)))
+                    .collect();
+                (Rc::new(**k), transformed_set)
+            })
+            .collect();
+
         Self{
             rows,
+            points,
+            elements,
             width: self.width,
             height: self.height
         }
     }
     #[allow(dead_code)]
     pub(crate) fn transpose_flip(&self) -> Self {
-        let rows: Vec<Vec<char>> = (0..self.width).map( |i| {
-            (0..self.height).map(|j| self.rows[j][self.width-i-1]).collect()
+        let rows: Vec<Vec<Rc<char>>> = (0..self.width).map( |i| {
+            (0..self.height).map(|j| Rc::new(*self.rows[j][self.width-i-1])).collect()
         }).collect();
+
+        let points: Vec<Rc<Point2D>> = (0..self.width)
+            .flat_map(|i| {
+                (0..self.height).map(move |j| Rc::new(Point2D::new(j, self.width-i-1)))
+            })
+            .collect();
+
+        let elements: BTreeMap<Rc<char>, BTreeSet<Rc<Point2D>>> = self.elements
+            .iter()
+            .map(|(k, v)| {
+                let transformed_set = v.iter()
+                    .map(|p| Rc::new(Point2D::new(p.y, self.width as isize - p.x - 1) ))
+                    .collect();
+                (Rc::new(**k), transformed_set)
+            })
+            .collect();
+
         Self{
             rows,
+            points,
+            elements,
             width: self.height,
             height: self.width
         }
