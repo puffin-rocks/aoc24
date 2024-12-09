@@ -17,3 +17,4 @@ What to learn:
 - **Day 06**. HashSet, next(), filter(), map_or(), par_windows(), loop, nested closure
 - **Day 07**. Enum with arguments, BTreeMap, passing function as argument, format!, pow(), log(), floor(), par_iter()
 - **Day 08**. HashMap and HashSet, iterators and loops
+- **Day 09**. Separation of mutable/immutable borrowing, implementation of swap, BTreeMap

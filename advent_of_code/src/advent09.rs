@@ -23,9 +23,8 @@ impl Chunk {
         }
     }
 
-    fn overwrite(&mut self, other: Chunk)->Option<Chunk>{
+    fn reserve_memory(&mut self, other: &Chunk)->Option<Chunk>{
         let remaining_size = self.size.saturating_sub(other.size);
-        self.file_id = other.file_id;
         self.size = other.size;
         if remaining_size > 0 {
             Some(Chunk::new(None, remaining_size))
@@ -131,29 +130,31 @@ impl Solve for Advent {
 
         let mut checksum = 0;
         for (_, source_position) in files.into_iter().rev(){
-            if let Some(block) = disk.get(&source_position) {
-                let mut incr = block.checksum_increment(source_position);
 
-                for (&target_position, &test_block) in disk.iter() {
-                    if target_position < source_position && test_block.file_id.is_none() && test_block.size >= block.size {
-                        // mutable borrowing
-                        if let Some(source_block) = disk.remove(&source_position) {
-                            if let Some(target_block) = disk.get_mut(&target_position) {
-                                let remainder = target_block.overwrite(source_block);
-                                incr = source_block.checksum_increment(target_position);
-
-                                if let Some(remainder) = remainder{
-                                    let add_position = target_position + target_block.size;
-                                    disk.insert(add_position, remainder);
-                                }
-                                disk.insert(source_position, Chunk::new(None, source_block.size));
-                            }
-                        }
-                        break;
-                    }
+            let mut target_position = None;
+            let source_block = disk.get(&source_position).unwrap();
+            let mut incr =  source_block.checksum_increment(source_position);
+            for (&test_position, &test_block) in disk.iter() {
+                if test_position < source_position && test_block.file_id.is_none() && test_block.size >= source_block.size{
+                    target_position = Some(test_position);
+                    break;
                 }
-                checksum+=incr;
             }
+
+            if let Some(target_position) = target_position {
+                if let (Some(source_block), Some(mut target_block)) = (disk.remove(&source_position), disk.remove(&target_position)) {
+                    let remainder = target_block.reserve_memory(&source_block);
+                    incr = source_block.checksum_increment(target_position);
+                    if let Some(remainder) = remainder {
+                        let add_position = target_position + target_block.size;
+                        disk.insert(add_position, remainder);
+                    }
+                    disk.insert(target_position, source_block);
+                    disk.insert(source_position, target_block);
+                }
+            }
+
+            checksum+=incr;
         }
         assert_display(checksum, Some(2858), 6289564433984, "Checksum", test_mode)
     }
