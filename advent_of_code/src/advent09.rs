@@ -2,24 +2,43 @@ use std::collections::{BTreeMap};
 use crate::utils::{Solve, Label, assert_display};
 
 #[derive(Debug, Clone, Copy)]
-struct Block{
+struct Chunk {
     file_id: Option<usize>,
     size: usize
 }
 
-impl Block{
+impl Chunk {
     fn new(file_id: Option<usize>, size: usize)->Self{
         Self {
             file_id,
             size
         }
     }
+
+    fn checksum_increment(&self, position: usize) -> usize{
+        if let Some(file_id) = self.file_id{
+            file_id*((2 * position + self.size-1)*self.size)/2
+        }else{
+            0
+        }
+    }
+
+    fn overwrite(&mut self, other: Chunk)->Option<Chunk>{
+        let remaining_size = self.size.saturating_sub(other.size);
+        self.file_id = other.file_id;
+        self.size = other.size;
+        if remaining_size > 0 {
+            Some(Chunk::new(None, remaining_size))
+        } else {
+            None
+        }
+    }
 }
 
 pub(crate) struct Advent {
     label: Label,
-    disk: BTreeMap<usize,usize>,
-    disk_alt: BTreeMap<usize, Block>
+    disk_with_blocks: BTreeMap<usize,usize>,
+    disk_with_chunks: BTreeMap<usize, Chunk>
 }
 
 
@@ -27,48 +46,11 @@ impl Default for Advent {
     fn default() -> Self {
         Self {
             label: Label::new(9),
-            disk: BTreeMap::new(),
-            disk_alt: BTreeMap::new(),
+            disk_with_blocks: BTreeMap::new(), //only positions of blocks storing files
+            disk_with_chunks: BTreeMap::new(), //positions of chunks (free or occupied)
         }
     }
 }
-
-fn search_block_to_write(disk: &BTreeMap<usize, Block>, current_position: usize) -> Option<usize>{
-    if let Some(block) =disk.get(&current_position) {
-        for (&test_position, &test_block) in disk.iter() {
-            if test_position>=current_position{
-                return None;
-            }
-            if let None = test_block.file_id {
-                let d = test_block.size as isize - block.size as isize;
-                if d >= 0 {
-                    return Some(test_position);
-                }
-            }
-        }
-    }
-    None
-}
-
-fn move_block(disk: &mut BTreeMap<usize, Block>, source_position: usize, target_position: usize) {
-    if let Some(source_block) = disk.remove(&source_position) {
-        if let Some(target_block) = disk.get_mut(&target_position) {
-            let d = target_block.size as isize - source_block.size as isize;
-
-            target_block.file_id = source_block.file_id;
-            target_block.size = source_block.size;
-
-            if d > 0 {
-                let add_position = target_position + target_block.size;
-                let b = Block::new(None, d as usize);
-                disk.insert(add_position, b);
-            }
-            let b = Block::new(None, source_block.size);
-            disk.insert(source_position, b);
-        }
-    }
-}
-
 
 impl Solve for Advent {
     fn get_label(&self) -> &Label{ &self.label }
@@ -82,14 +64,14 @@ impl Solve for Advent {
             match ch.to_digit(10).map(|d| d as usize){
                 Some(num) =>{
                     if is_file {
-                        self.disk_alt.insert(curr_position, Block::new(Some(curr_id), num));
+                        self.disk_with_chunks.insert(curr_position, Chunk::new(Some(curr_id), num));
                         for _ in 0..num {
-                            self.disk.insert(curr_position, curr_id);
+                            self.disk_with_blocks.insert(curr_position, curr_id);
                             curr_position+=1;
                         }
                     }
                     else{
-                        self.disk_alt.insert(curr_position, Block::new(None, num));
+                        self.disk_with_chunks.insert(curr_position, Chunk::new(None, num));
                         curr_position+=num;
                         curr_id+=1;
                     }
@@ -103,59 +85,76 @@ impl Solve for Advent {
 
     fn info(&self) -> Result<(), String> {
         self.check_input(None)?;
-        if let Some((k,v)) = self.disk.last_key_value() {
-            println!("Space taken {}", k);
+        if let Some((k,v)) = self.disk_with_blocks.last_key_value() {
+            println!("Number of blocks {}", k);
             println!("Number of files {}", v);
         }
+        println!("Number of chunks {}", self.disk_with_chunks.len());
         Ok(())
     }
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(1))?;
-        let mut disk = self.disk.clone();
+        let mut disk = self.disk_with_blocks.clone();
         let mut curr_position: usize = 0;
-
+        let mut checksum = 0;
         loop{
-            while let Some(_) = disk.get(&curr_position){
-                curr_position+=1
+            //current position of empty block
+            while let Some(file_id) = disk.get(&curr_position){
+                checksum+=file_id*curr_position;
+                curr_position+=1;
             }
             if let Some((&file_position, &file_id)) = disk.last_key_value(){
+                //we do not move files before current empty block
                 if file_position<curr_position{
                     break;
                 }
                 disk.remove(&file_position);
                 disk.insert(curr_position, file_id);
+                checksum+=file_id*curr_position;
+                //empty block search should start from the next item
                 curr_position+=1;
             }
-        }
-        let mut checksum = 0;
-        for (file_position, file_id) in disk{
-            checksum+=file_position*file_id;
         }
         assert_display(checksum, Some(1928), 6259790630969, "Checksum", test_mode)
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
-        let mut disk = self.disk_alt.clone();
+        let mut disk = self.disk_with_chunks.clone();
 
-        let mut files: BTreeMap<usize, usize> = BTreeMap::new();
-        for (&current_position, block) in disk.iter(){
-            if let Some(file_id) = block.file_id{
-                files.insert(file_id, current_position);
-            }
-        }
-        for (_, source_position) in files.into_iter().rev(){
-            let target_position = search_block_to_write(&disk, source_position);
-            if let Some(target_position) = target_position{
-                move_block(&mut disk, source_position, target_position);
-            }
-        }
+        // Use block.file_id.map to:
+        //     If block.file_id is Some(file_id), transform it into (file_id, current_position).
+        //     If block.file_id is None, exclude the block.
+        let files: BTreeMap<usize, usize> = disk
+            .iter()
+            .filter_map(|(&current_position, block)| block.file_id.map(|file_id| (file_id, current_position)))
+            .collect();
+
         let mut checksum = 0;
-        for (current_position, block) in &disk{
-            if let Some(file_id) = block.file_id {
-                checksum+=file_id*((2*current_position+block.size-1)*block.size)/2;
+        for (_, source_position) in files.into_iter().rev(){
+            if let Some(block) = disk.get(&source_position) {
+                let mut incr = block.checksum_increment(source_position);
+
+                for (&target_position, &test_block) in disk.iter() {
+                    if target_position < source_position && test_block.file_id.is_none() && test_block.size >= block.size {
+                        // mutable borrowing
+                        if let Some(source_block) = disk.remove(&source_position) {
+                            if let Some(target_block) = disk.get_mut(&target_position) {
+                                let remainder = target_block.overwrite(source_block);
+                                incr = source_block.checksum_increment(target_position);
+
+                                if let Some(remainder) = remainder{
+                                    let add_position = target_position + target_block.size;
+                                    disk.insert(add_position, remainder);
+                                }
+                                disk.insert(source_position, Chunk::new(None, source_block.size));
+                            }
+                        }
+                        break;
+                    }
+                }
+                checksum+=incr;
             }
         }
         assert_display(checksum, Some(2858), 6289564433984, "Checksum", test_mode)
     }
 }
-
