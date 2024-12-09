@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap};
+use std::collections::{BTreeMap, BTreeSet};
 use crate::utils::{Solve, Label, assert_display};
 
 #[derive(Debug, Clone, Copy)]
@@ -128,33 +128,48 @@ impl Solve for Advent {
             .filter_map(|(&current_position, block)| block.file_id.map(|file_id| (file_id, current_position)))
             .collect();
 
+        let mut free_chunks: BTreeMap<usize, BTreeSet<usize>> = BTreeMap::new();
+        for (&position, chunk) in disk.iter(){
+            if chunk.file_id.is_none(){
+                free_chunks.entry(chunk.size).or_insert_with(BTreeSet::new).insert(position);
+            }
+        }
+
         let mut checksum = 0;
         for (_, source_position) in files.into_iter().rev(){
 
-            let mut target_position = None;
             let source_block = disk.get(&source_position).unwrap();
-            let mut incr =  source_block.checksum_increment(source_position);
-            for (&test_position, &test_block) in disk.iter() {
-                if test_position < source_position && test_block.file_id.is_none() && test_block.size >= source_block.size{
-                    target_position = Some(test_position);
-                    break;
-                }
-            }
+            let s = source_block.size;
 
-            if let Some(target_position) = target_position {
-                if let (Some(source_block), Some(mut target_block)) = (disk.remove(&source_position), disk.remove(&target_position)) {
+            let target_positions: Vec<&usize> = free_chunks
+                .range(s..)
+                .filter_map(|(_, v)| v.first())
+                .filter(|&&p| p < source_position)
+                .collect();
+
+            if let Some(&&target_position) = target_positions.iter().min() {
+                if let (Some(source_block), Some(mut target_block)) = (
+                    disk.remove(&source_position),
+                    disk.remove(&target_position)
+                ) {
+                    free_chunks.get_mut(&target_block.size).unwrap().remove(&target_position);
+
                     let remainder = target_block.reserve_memory(&source_block);
-                    incr = source_block.checksum_increment(target_position);
+                    checksum += source_block.checksum_increment(target_position);
+
                     if let Some(remainder) = remainder {
                         let add_position = target_position + target_block.size;
+                        free_chunks.entry(remainder.size).or_insert_with(BTreeSet::new).insert(add_position);
                         disk.insert(add_position, remainder);
                     }
+
                     disk.insert(target_position, source_block);
                     disk.insert(source_position, target_block);
                 }
+            }else
+            {
+                checksum += source_block.checksum_increment(source_position);
             }
-
-            checksum+=incr;
         }
         assert_display(checksum, Some(2858), 6289564433984, "Checksum", test_mode)
     }
