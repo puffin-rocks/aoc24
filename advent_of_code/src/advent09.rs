@@ -109,8 +109,9 @@ impl Advent{
                                 let split_position = source_position + remainder.size;
                                 disk.insert(source_position, remainder);
                                 disk.insert(split_position, target_block);
+                            }else{
+                                disk.insert(source_position, target_block);
                             }
-
                         }
 
                         checksum += source_block.checksum_increment(target_position);

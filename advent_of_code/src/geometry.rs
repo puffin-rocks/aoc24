@@ -19,7 +19,6 @@ pub(crate) enum Direction{
 }
 
 impl Direction {
-    #[allow(dead_code)]
     pub(crate) fn mirror(self) -> Self{
         match self {
             Direction::Up => Direction::Down,
