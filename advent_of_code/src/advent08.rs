@@ -6,7 +6,6 @@ use crate::utils::{Solve, Label, assert_display};
 pub(crate) struct Advent {
     label: Label,
     canvas: Canvas,
-    // antennas: HashMap<char, Vec<Point2D>>
 }
 
 impl Default for Advent {
@@ -14,7 +13,6 @@ impl Default for Advent {
         Self {
             label: Label::new(8),
             canvas: Canvas::default(),
-            // antennas: HashMap::new()
         }
     }
 }

@@ -69,6 +69,15 @@ impl Direction {
     }
 }
 
+impl Hash for Direction {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let p = self.to_point();
+        p.hash(state);
+    }
+}
+
+impl Eq for Direction {}
+
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub(crate) struct Point2D {
@@ -115,6 +124,10 @@ impl Point2D {
             3 => Point2D::new(height as isize - self.y-1, self.x),
             _ => {Point2D::new(self.x, self.y)}
         }
+    }
+
+    pub (crate) fn  get_point(&self, direction: Direction, length: usize) -> Point2D{
+        self + &(&direction *length)
     }
 
 }
