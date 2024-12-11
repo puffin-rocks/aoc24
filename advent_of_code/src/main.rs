@@ -16,6 +16,7 @@ mod advent08;
 mod advent09;
 mod advent10;
 mod advent11;
+mod advent12;
 
 use std::time::{Duration, Instant};
 
@@ -108,6 +109,7 @@ fn collect_solutions() -> HashMap<u8, Box<dyn Solve>>{
     add_default_to_collection::<advent09::Advent>(&mut advents);
     add_default_to_collection::<advent10::Advent>(&mut advents);
     add_default_to_collection::<advent11::Advent>(&mut advents);
+    add_default_to_collection::<advent12::Advent>(&mut advents);
     advents
 }
 
