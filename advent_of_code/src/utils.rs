@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 use std::path::Path;
 use crate::geometry::{Canvas, CanvasAsync};
 
@@ -139,4 +139,12 @@ pub fn line2vec_i32(line: String) -> Result<Vec<i32>, std::num::ParseIntError> {
         v.push(p.parse::<i32>()?); // Propagate error using `?`
     }
     Ok(v)
+}
+#[allow(dead_code)]
+fn write_vec_to_file(vec: Vec<Vec<char>>, filename: &str) -> io::Result<()> {
+    let mut file = File::create(filename)?;
+    for line in vec {
+        writeln!(file, "{}", line.iter().collect::<String>())?;
+    }
+    Ok(())
 }
