@@ -23,12 +23,15 @@ impl Default for Advent {
 }
 
 impl Advent{
-    fn check_enclosed(&self, set: &BTreeSet<Point2D>)-> (Option<Point2D>, Option<char>){
+    fn check_enclosed(&self, set: &BTreeSet<Point2D>, letter: char)-> (Option<Point2D>, Option<char>){
         let mut check_letter: Option<char> = None;
         let mut result: Option<Point2D> = None;
         for p in set{
             for d in [&Direction::base()[..], &Direction::diagonal()[..]].concat() {
                 let n_point = p + &d;
+                if set.contains(&n_point){
+                    continue;
+                }
                 let neighbour = self.canvas.get_element(&n_point);
                 match neighbour {
                     Some(&letter) => {
@@ -193,27 +196,27 @@ impl Solve for Advent {
                         pset.insert(pr);
                     }
                 }
-                // if pset.len()>2{
-                //     println!("{:?}", (k, &pset, v.len()));
-                //     if ***k=='Y'{
-                //         let dim = self.canvas.shape();
-                //         let mut rows: Vec<Vec<char>> = Vec::new();
-                //         for j in 0..*dim.1{
-                //             let mut row: Vec<char> = Vec::new();
-                //             for i in 0..*dim.0{
-                //                 let p = Point2D::new(i, j);
-                //                 if test.contains(&p){
-                //                     row.push(***k);
-                //                 }
-                //                 else{
-                //                     row.push('.');
-                //                 }
-                //             }
-                //             rows.push(row);
-                //         }
-                //         write_vec_to_file(rows, "test.txt");
-                //     }
-                // }
+                if pset.len()>3{
+                    println!("{:?}", (k, &pset, v.len()));
+                    if ***k=='P'{
+                        let dim = self.canvas.shape();
+                        let mut rows: Vec<Vec<char>> = Vec::new();
+                        for j in 0..*dim.1{
+                            let mut row: Vec<char> = Vec::new();
+                            for i in 0..*dim.0{
+                                let p = Point2D::new(i, j);
+                                if test.contains(&p){
+                                    row.push(***k);
+                                }
+                                else{
+                                    row.push('.');
+                                }
+                            }
+                            rows.push(row);
+                        }
+                        write_vec_to_file(rows, "test.txt");
+                    }
+                }
 
                 let p = *pset.iter().max().unwrap();
                 let p_none = get_price(&test, None,false);
@@ -223,11 +226,15 @@ impl Solve for Advent {
                     }
                 }
 
-                if let (Some(pt), Some(ch)) = self.check_enclosed(&test) {
+                //let p = get_price(&test, None,false);
+
+                if let (Some(pt), Some(ch)) = self.check_enclosed(&test, ***k) {
                     let bucket_vec_out = bucket_map.get(&Arc::new(ch)).unwrap();
                     for vo in bucket_vec_out{
                         if vo.contains(&Arc::new(pt)){
-                            //println!("{:?}", (k, ch, vo.len(), p));
+                            if ch=='P' {
+                                println!("{:?}", (k, ch, vo.len(), p));
+                            }
                             result2 += vo.len()*p;
                             break
                         }
@@ -245,10 +252,8 @@ impl Solve for Advent {
         }
 
         println!("{:?}", result2);
-        //5.7 sec
-        //last stand: 897188
-        //850686 too high
-        //835126 too low
+        //898684
+
         assert_display(result, Some(1930), 1486324, "Total price of fencing", test_mode)
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
@@ -286,7 +291,7 @@ fn get_price(bucket: &BTreeSet<Point2D>, starting_point: Option<&Point2D>, verbo
                 if n_points == 1 {
                     match starting_point{
                         Some(po) =>{
-                            if po.x()+po.x()<p.x()+p.y(){
+                            if po.x()+po.y()<p.x()+p.y(){
                                 starting_point = Some(p);
                             }
                         },
@@ -450,6 +455,7 @@ fn get_next_side(picture: &Vec<bool>, curr_direction: Option<Direction>) -> Dire
                 *dirs.iter().next().unwrap()
             }
             else{
+                //d
                 match d{
                     Direction::Up =>Direction::Left,
                     Direction::Right =>Direction::Up,
