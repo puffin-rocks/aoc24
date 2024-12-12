@@ -3,6 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul, Sub};
 use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) enum Direction{
@@ -411,4 +412,74 @@ impl Canvas {
             height: self.width
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct CanvasAsync {
+    rows: Vec<Vec<Arc<char>>>,
+    points: Vec<Arc<Point2D>>,
+    elements: BTreeMap<Arc<char>, BTreeSet<Arc<Point2D>>>,
+    width: usize,
+    height: usize
+}
+
+impl Default for CanvasAsync {
+    fn default() -> Self {
+        Self{
+            rows:Vec::new(),
+            points: Vec::new(),
+            elements: BTreeMap::new(),
+            width:0,
+            height:0
+        }
+    }
+}
+impl CanvasAsync {
+    pub(crate) fn shape(&self) -> (&usize, &usize) {
+        (&self.width, &self.height)
+    }
+
+    pub(crate) fn add_row(&mut self, row: Vec<char>) {
+        if self.width > 0 { assert_eq!(row.len(), self.width) } else { self.width = row.len() }
+        self.height += 1;
+        let mut rc_row: Vec<Arc<char>> = Vec::new();
+        for (e, &r) in row.iter().enumerate() {
+            let rc_char = Arc::new(r);
+            let p = Arc::new(Point2D::new(e, self.height - 1));
+
+            self.elements.entry(Arc::clone(&rc_char))
+                .or_insert_with(BTreeSet::new).insert(Arc::clone(&p));
+            self.points.push(p);
+            rc_row.push(rc_char);
+        }
+        self.rows.push(rc_row);
+    }
+    pub(crate) fn get_element(&self, point: &Point2D) -> Option<&char> {
+        if point.is_out_of_bounds(self.width, self.height) {
+            None
+        } else {
+            Some(&self.rows[point.y as usize][point.x as usize])
+        }
+    }
+
+    // pub(crate) fn get_element_set(&self) -> BTreeSet<Arc<char>> {
+    //     self.elements.keys().cloned().collect()
+    // }
+
+    pub(crate) fn elements(&self) -> &BTreeMap<Arc<char>, BTreeSet<Arc<Point2D>>> {
+        &self.elements
+    }
+
+    // pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Arc<Point2D>>, String> {
+    //     match self.elements.get(el) {
+    //         None => Err(format!("Cannot locate {}", el)),
+    //         Some(locations) => { Ok(locations) }
+    //     }
+    // }
+    //
+    // pub(crate) fn iter(&self) -> impl Iterator<Item=Point2D> + '_ {
+    //     (0..self.width).flat_map(move |i| {
+    //         (0..self.height).map(move |j| Point2D::new(i, j))
+    //     })
+    // }
 }
