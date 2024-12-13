@@ -177,6 +177,10 @@ impl Solve for Advent {
         assert_display(result, Some(1930), 1486324, "Total price of fencing", test_mode)
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
+        //another idea to try is
+        //-instead of collecting flags of walls, collect their edges
+        //-for each bucket arrange edges in map of which points can be reached from this edge
+        //- should be three cases: (1) corners, with product of points 0, count as 1, (2) lines with non zero product of points, count as 0 (3) crosses with four points, count as 2
         self.check_input(Some(2))?;
         let (_, bucket_map) = self.compute_buckets_and_walls();
         // Merging result calculation

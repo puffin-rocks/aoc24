@@ -180,6 +180,16 @@ impl Add<&Direction> for &Point2D {
     }
 }
 
+impl Add<&Direction> for &Direction {
+    type Output = Direction;
+
+    fn add(self, other: &Direction) -> Direction {
+        let p1 = other.to_point();
+        let p0 = self.to_point();
+        Direction::ToPoint(Point2D::new(p0.x + p1.x, p0.y + p1.y))
+    }
+}
+
 impl<T> Mul<T> for &Direction
 where
     T: Copy + TryInto<isize>,
