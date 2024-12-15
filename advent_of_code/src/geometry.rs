@@ -195,6 +195,15 @@ impl Add<&Direction> for &Point2D {
     }
 }
 
+impl Add<&Direction> for &Rc<Point2D> {
+    type Output = Rc<Point2D>;
+
+    fn add(self, other: &Direction) -> Rc<Point2D> {
+        let p = other.to_point();
+        Rc::new(Point2D::new(self.x + p.x, self.y + p.y))
+    }
+}
+
 impl Add<&Direction> for &Direction {
     type Output = Direction;
 
@@ -343,10 +352,8 @@ impl Canvas {
         }
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = Point2D>+ '_  {
-        (0..self.width).flat_map(move |i| {
-            (0..self.height).map(move |j| Point2D::new(i, j))
-        })
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &Rc<Point2D>>{
+        self.points.iter()
     }
     #[allow(dead_code)]
     pub(crate) fn transpose(&self) -> Self {
