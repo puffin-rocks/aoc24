@@ -67,58 +67,39 @@ impl Solve for Advent {
                     continue;
                 }else{
                     if movable_boxes.contains(&test_position){
-                        let (condition, reversed): (Box<dyn Fn(&Rc<Point2D>, &Rc<Point2D>) -> bool> , bool)= match d {
-                            Direction::Right => (Box::new(|b: &Rc<Point2D>, r: &Rc<Point2D>| (**b).y() == (**r).y() && (**b).x()>(**r).x()), false),
-                            Direction::Left => (Box::new(|b: &Rc<Point2D>, r: &Rc<Point2D>| (**b).y() == (**r).y() && (**b).x()<(**r).x()), true),
-                            Direction::Up => (Box::new(|b: &Rc<Point2D>, r: &Rc<Point2D>| (**b).x() == (**r).x() && (**b).y()>(**r).y()), false),
-                            Direction::Down => (Box::new(|b: &Rc<Point2D>, r: &Rc<Point2D>| (**b).x() == (**r).x() && (**b).y()<(**r).y()), true),
-                            _ => unreachable!()
-                        };
-                        let mut removed: Vec<_> = movable_boxes.iter().filter(|&x| condition(x, &robot_position)).cloned().collect();
-                        match d{
-                            Direction::Right|Direction::Left =>removed.sort_by_key(|point| *point.x()),
-                            Direction::Up|Direction::Down =>removed.sort_by_key(|point| *point.y()),
-                            _ => unreachable!()
-                        }
-                        if reversed {
-                            removed.reverse();
-                        }
-
-                        let mut has_impulse: Option<bool> = Some(true);
-                        let mut moved_boxes: HashSet<Rc<Point2D>> = HashSet::new();
-                        for p in removed.iter(){
-                            if let Some(impulse) = has_impulse{
-                                if impulse {
-                                    let p_moved = p + &d;
-                                    if obstacles.contains(&p_moved) {
-                                        has_impulse = None;
-                                        break;
-                                    }
-                                    has_impulse = Some(movable_boxes.contains(&p_moved));
-                                    moved_boxes.insert(p_moved);
-                                }
-                                else{
-                                    moved_boxes.insert(p.clone());
-                                }
+                        let mut moved_boxes_before: HashSet<Rc<Point2D>> = HashSet::new();
+                        let mut moved_boxes_after: HashSet<Rc<Point2D>> = HashSet::new();
+                        let mut p = test_position.clone();
+                        let mut could_move: bool = true;
+                        loop{
+                            moved_boxes_before.insert(p.clone());
+                            let p_moved = &p + &d;
+                            moved_boxes_after.insert(p_moved.clone());
+                            if obstacles.contains(&p_moved) {
+                                could_move = false;
+                                break;
+                            }
+                            if movable_boxes.contains(&p_moved){
+                                p = p_moved;
+                            }
+                            else{
+                                break;
                             }
                         }
-                        if has_impulse == Some(false){
-                            movable_boxes.retain(|x| !condition(x, &robot_position));
-                            movable_boxes.extend(moved_boxes);
+                        if could_move{
+                            movable_boxes.retain(|x| !moved_boxes_before.contains(x));
+                            movable_boxes.extend(moved_boxes_after);
                             robot_position = test_position;
-                        }
-                        if has_impulse == Some(true){
-                            unreachable!();
                         }
                     }else{
                         robot_position = test_position;
                     }
                 }
             }
-            let mut gps_sum: isize = 0;
-            for b in movable_boxes.iter(){
-                gps_sum+=(**b).x() + (**b).y()*100;
-            }
+            let gps_sum: isize = movable_boxes
+                .iter()
+                .map(|p| p.x() + p.y() * 100)
+                .sum();
             assert_display(gps_sum as usize, Some(10092), 1552879, "Sum of boxes GPS coordinates", test_mode)
         }else{
             Err(String::from("Multiple robot locations"))
@@ -156,8 +137,12 @@ impl Solve for Advent {
                     ']'
                 }
             }
-            let mut movable_boxes = boxes_left.iter().map(|e| (e.clone(), '[')).collect::<BTreeSet<_>>();
-            movable_boxes.extend(boxes_right.iter().map(|e| (e.clone(), ']')));
+            let mut movable_boxes = boxes_left
+                .iter()
+                .map(|e| (e.clone(), '['))
+                .chain(boxes_right.iter().map(|e| (e.clone(), ']')))
+                .collect::<BTreeSet<_>>();
+            
             for c in self.commands.chars(){
                 let d = match c{
                     '>' => Direction::Right,
@@ -171,57 +156,38 @@ impl Solve for Advent {
                     continue;
                 }else{
                     if movable_boxes.contains( &(test_position.clone(),']')) || movable_boxes.contains( &(test_position.clone(),'[')){
+                        let mut moved_boxes_before: HashSet<LabeledPoint> = HashSet::new();
+                        let mut moved_boxes_after: HashSet<LabeledPoint> = HashSet::new();
+                        let mut could_move: bool = true;
                         match d {
                             Direction::Right | Direction::Left => {
-                                let (condition, reversed): (Box<dyn Fn(&LabeledPoint, &Rc<Point2D >) -> bool> , bool)=
-                                if d == Direction::Right {
-                                    (Box::new(|b: &LabeledPoint, r: &Rc<Point2D>| (*(*b).0).y() == (**r).y() && (*(*b).0).x() > (**r).x()), false)
+                                let label= if movable_boxes.contains( &(test_position.clone(),']')){
+                                    ']'
                                 }
                                 else{
-                                    (Box::new(|b: &LabeledPoint, r: &Rc<Point2D>| (*(*b).0).y() == (**r).y() && (*(*b).0).x() < (**r).x()), true)
+                                    '['
                                 };
-                                let mut removed: Vec<_> = movable_boxes.iter().filter(|&x| condition(x, &robot_position)).cloned().collect();
-                                removed.sort_by_key(|point| *point.0.x());
-                                if reversed {
-                                    removed.reverse();
-                                }
-
-                                let mut has_impulse: Option<bool> = Some(true);
-                                let mut moved_boxes: HashSet<LabeledPoint> = HashSet::new();
-                                for (p, label) in removed.iter().step_by(2){
-                                    if let Some(impulse) = has_impulse{
-                                        if impulse {
-                                            let start_moved = p + &d;
-                                            let end_moved = p + &(&d*2);
-                                            if obstacles.contains(&end_moved) {
-                                                has_impulse = None;
-                                                break;
-                                            }
-                                            has_impulse = Some(movable_boxes.contains(&(end_moved.clone(),*label)));
-                                            moved_boxes.insert((start_moved, *label));
-                                            moved_boxes.insert( (end_moved, reverse_label(label)));
-                                        }
-                                        else{
-                                            moved_boxes.insert( (p.clone(), *label));
-                                            moved_boxes.insert( ((p + &d).clone(), reverse_label(label)));
-                                        }
+                                let mut p= (test_position.clone(), label);
+                                loop{
+                                    let start_moved = &p.0 + &d;
+                                    let end_moved = &p.0 + &(&d*2);
+                                    moved_boxes_before.extend([p, (start_moved.clone(), reverse_label(&label))]);
+                                    moved_boxes_after.extend([(start_moved.clone(), label), (end_moved.clone(), reverse_label(&label))]);
+                                    if obstacles.contains(&end_moved){
+                                        could_move = false;
+                                        break;
                                     }
-                                }
-                                if has_impulse == Some(false){
-                                    movable_boxes.retain(|x| !condition(x, &robot_position));
-                                    movable_boxes.extend(moved_boxes);
-                                    robot_position = test_position;
-                                }
-                                if has_impulse == Some(true){
-                                    unreachable!();
+                                    if movable_boxes.contains( &(end_moved.clone(), label)){
+                                        p = (end_moved, label);
+                                    }
+                                    else{
+                                        break;
+                                    }
                                 }
                             },
                             Direction::Up | Direction::Down =>{
-                                let mut moved_boxes_before: HashSet<LabeledPoint> = HashSet::new();
-
                                 let mut stack: Vec<LabeledPoint> = Vec::new();
-                                let mut could_move: bool = true;
-                                let mut moved_boxes_after: HashSet<LabeledPoint> = HashSet::new();
+
                                 if movable_boxes.contains( &(test_position.clone(),']')){
                                     stack.push((test_position.clone(),']'));
                                     stack.push((&test_position+&Direction::Left,'['));
@@ -259,26 +225,26 @@ impl Solve for Advent {
                                         break;
                                     }
                                 }
-                                if could_move{
-                                    movable_boxes.retain(|x| !moved_boxes_before.contains(x));
-                                    movable_boxes.extend(moved_boxes_after);
-                                    robot_position = test_position;
-                                }
+
                             },
                             _ => unreachable!()
                         };
+                        if could_move{
+                            movable_boxes.retain(|x| !moved_boxes_before.contains(x));
+                            movable_boxes.extend(moved_boxes_after);
+                            robot_position = test_position;
+                        }
                     }else{
                         robot_position = test_position;
                     }
                 }
             }
 
-            let mut gps_sum: isize = 0;
-            for (p, label) in movable_boxes.iter(){
-                if *label == '[' {
-                    gps_sum += (**p).x() + (**p).y() * 100;
-                }
-            }
+            let gps_sum: isize = movable_boxes
+                .iter()
+                .filter(|(_, label)| *label == '[')
+                .map(|(p, _)| p.x() + p.y() * 100)
+                .sum();
             assert_display(gps_sum as usize, Some(9021), 1561175, "Sum of boxes GPS coordinates", test_mode)
         }else{
             Err(String::from("Multiple robot locations"))
