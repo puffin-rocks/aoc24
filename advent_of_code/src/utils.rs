@@ -141,7 +141,7 @@ pub fn line2vec_i32(line: String) -> Result<Vec<i32>, std::num::ParseIntError> {
     Ok(v)
 }
 #[allow(dead_code)]
-fn write_vec_to_file(vec: Vec<Vec<char>>, filename: &str) -> io::Result<()> {
+pub fn write_vec_to_file(vec: Vec<Vec<char>>, filename: &str) -> io::Result<()> {
     let mut file = File::create(filename)?;
     for line in vec {
         writeln!(file, "{}", line.iter().collect::<String>())?;

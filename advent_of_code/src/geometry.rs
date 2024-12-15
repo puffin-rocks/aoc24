@@ -107,11 +107,26 @@ impl Point2D {
     pub(crate) fn is_out_of_bounds(&self, width: usize, height: usize) -> bool{
         self.x < 0 || self.y < 0 || self.x > (width - 1) as isize || self.y > (height - 1) as isize
     }
-    #[allow(dead_code)]
+
+    pub(crate) fn return_into_bounds(&mut self, width: usize, height: usize){
+        fn coordinate_within_bounds(x:isize, bound: isize) -> isize{
+            let x_rem = x.rem_euclid(bound);
+            if x_rem<0{
+                bound + x_rem
+            }
+            else{
+                x_rem
+            }
+        }
+
+        self.x = coordinate_within_bounds(self.x, width as isize);
+        self.y = coordinate_within_bounds(self.y, height as isize);
+    }
+
     pub(crate) fn x(&self) -> &isize{
         &self.x
     }
-    #[allow(dead_code)]
+
     pub(crate) fn y(&self) -> &isize{
         &self.y
     }
