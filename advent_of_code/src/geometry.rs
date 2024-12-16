@@ -204,6 +204,15 @@ impl Add<&Direction> for &Rc<Point2D> {
     }
 }
 
+impl Add<&Direction> for &Arc<Point2D> {
+    type Output = Arc<Point2D>;
+
+    fn add(self, other: &Direction) -> Arc<Point2D> {
+        let p = other.to_point();
+        Arc::new(Point2D::new(self.x + p.x, self.y + p.y))
+    }
+}
+
 impl Add<&Direction> for &Direction {
     type Output = Direction;
 
@@ -502,12 +511,12 @@ impl CanvasAsync {
         &self.elements
     }
 
-    // pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Arc<Point2D>>, String> {
-    //     match self.elements.get(el) {
-    //         None => Err(format!("Cannot locate {}", el)),
-    //         Some(locations) => { Ok(locations) }
-    //     }
-    // }
+    pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Arc<Point2D>>, String> {
+        match self.elements.get(el) {
+            None => Err(format!("Cannot locate {}", el)),
+            Some(locations) => { Ok(locations) }
+        }
+    }
     //
     // pub(crate) fn iter(&self) -> impl Iterator<Item=Point2D> + '_ {
     //     (0..self.width).flat_map(move |i| {
