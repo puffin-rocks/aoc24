@@ -511,12 +511,12 @@ impl CanvasAsync {
         &self.elements
     }
 
-    pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Arc<Point2D>>, String> {
-        match self.elements.get(el) {
-            None => Err(format!("Cannot locate {}", el)),
-            Some(locations) => { Ok(locations) }
-        }
-    }
+    // pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Arc<Point2D>>, String> {
+    //     match self.elements.get(el) {
+    //         None => Err(format!("Cannot locate {}", el)),
+    //         Some(locations) => { Ok(locations) }
+    //     }
+    // }
     //
     // pub(crate) fn iter(&self) -> impl Iterator<Item=Point2D> + '_ {
     //     (0..self.width).flat_map(move |i| {
