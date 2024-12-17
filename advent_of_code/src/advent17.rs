@@ -1,5 +1,5 @@
-use std::collections::HashMap;
-use crate::utils::{Solve, Label, assert_display};
+use std::collections::{HashMap};
+use crate::utils::{Solve, Label, assert_display, vec2line};
 
 const A: char = 'A';
 const B: char = 'B';
@@ -18,6 +18,16 @@ impl Default for Advent {
             registers: HashMap::new(),
             program: Vec::new()
         }
+    }
+}
+
+impl Advent{
+    fn calculate_one_output(&self, a: usize) -> (u8, usize){
+        let n = self.program.len();
+        let mut registers: HashMap<char, usize> = HashMap::new();
+        registers.insert(A, a);
+        let out = execute_program(&mut registers, &self.program[..n - 2].to_vec(), false);
+        (out.parse::<u8>().expect("Cannot parse output"), *registers.get(&A).expect("Register A does not exist"))
     }
 }
 
@@ -51,48 +61,94 @@ impl Solve for Advent {
         //Case 1: If register C contains 9, the program 2,6 would set register B to 1.
         registers.insert(C, 9);
         let mut program: Vec<u8> = vec![2, 6];
-        execute_program(&mut registers, &program);
+        execute_program(&mut registers, &program, false);
         assert_eq!(registers.get(&B), Some(&1_usize));
         //Case 2: If register A contains 10, the program 5,0,5,1,5,4 would output 0,1,2.
         registers.clear();
         registers.insert(A, 10);
         program = vec![5,0,5,1,5,4];
-        let output = execute_program(&mut registers, &program);
+        let output = execute_program(&mut registers, &program, false);
         assert_eq!(output, String::from("0,1,2"));
         //Case 3 If register A contains 2024, the program 0,1,5,4,3,0 would output 4,2,5,6,7,7,7,7,3,1,0 and leave 0 in register A.
         registers.clear();
         registers.insert(A, 2024);
         program = vec![0,1,5,4,3,0];
-        let output = execute_program(&mut registers, &program);
+        let output = execute_program(&mut registers, &program, false);
         assert_eq!(output, String::from("4,2,5,6,7,7,7,7,3,1,0"));
         assert_eq!(registers.get(&A), Some(&0_usize));
         //Case 4 If register B contains 29, the program 1,7 would set register B to 26.
         registers.clear();
         registers.insert(B, 29);
         program = vec![1,7];
-        execute_program(&mut registers, &program);
+        execute_program(&mut registers, &program, false);
         assert_eq!(registers.get(&B), Some(&26_usize));
         //Case 5: If register B contains 2024 and register C contains 43690, the program 4,0 would set register B to 44354.
         registers.clear();
         registers.insert(B, 2024);
         registers.insert(C, 43690);
         program = vec![4,0];
-        execute_program(&mut registers, &program);
+        execute_program(&mut registers, &program, false);
         assert_eq!(registers.get(&B), Some(&44354_usize));
+        registers.clear();
+        registers.insert(A, 117440);
+        program = vec![0,3,5,4,3,0];
+        assert_eq!(execute_program(&mut registers, &program, false), String::from("0,3,5,4,3,0"));
         Ok(())
     }
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(1))?;
         let mut registers = self.registers.clone();
-        let output = execute_program(&mut registers, &self.program);
+        let output = execute_program(&mut registers, &self.program, false);
         assert_display(output,
-                       Some(String::from("4,6,3,5,6,3,5,2,1,0")),
+                       Some(String::from("5,7,3,0")),
                        String::from("1,5,0,3,7,3,0,3,1"), "Program output", test_mode)
     }
-    // fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
-    //     self.check_input(Some(2))?;
-    //     Err(String::from("Not solved yet"))
-    // }
+    fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
+        let a0 = *self.registers.get(&A).unwrap();
+        let (_, a1) = self.calculate_one_output(a0);
+        let coef = a0/a1; //how much A decreases
+
+        let mut i = self.program.len()-1;
+        let mut steps: HashMap<usize, usize> = HashMap::new();
+        steps.insert(self.program.len(), 0); //initial A
+
+        loop {
+            let mut a = *steps.get(&(i+1)).unwrap()*coef; //where to start search
+            let v = self.program[i]; //target v
+
+            loop { //search for closest A producing v
+                let (out, _) = self.calculate_one_output(a);
+                if out == v {
+                    break;
+                } else {
+                    a += 1;
+                }
+            }
+            steps.insert(i, a);
+
+            //sometimes found closest A does not produce the sequence back
+            //we check that and if this is the case, we increase previous A by 7 and repeat the step
+            let mut registers: HashMap<char, usize> = HashMap::new();
+            registers.insert(A, a);
+            let val_r = execute_program(&mut registers, &self.program, false);
+            let val_e = self.program[i..].iter()
+                .map(|num| num.to_string())
+                .collect::<Vec<_>>()
+                .join(",");
+
+            if val_e!=val_r{
+                //safe because we came from previous step
+                *steps.entry(i+1).or_insert(0)+=7;
+            }else{
+                if i == 0 {
+                    break;
+                }
+                i-=1;
+            }
+        }
+        assert_display(*steps.get(&0).unwrap(), Some(117440), 105981155568026, "Lowest A to repeat itself", test_mode)
+    }
 }
 
 fn operand_value(operand: &u8, registers: &HashMap<char, usize>, combo: bool) -> usize{
@@ -115,12 +171,14 @@ fn division(value: usize, registers: &HashMap<char, usize>)-> usize{
     num/den
 }
 
-fn execute_program(registers: &mut HashMap<char, usize>, program: &Vec<u8>)->String{
+fn execute_program(registers: &mut HashMap<char, usize>, program: &Vec<u8>, verbose: bool)->String{
     let mut output: Vec<u8> = Vec::new();
     let mut i: usize = 0;
     while let (Some(opcode), Some(operand)) = (program.get(i), program.get(i+1)) {
-        //println!("{:?}", (opcode, operand));
-
+        if verbose {
+            println!("{:?}", registers);
+            println!("{:?}", (opcode, operand));
+        }
         let mut increment = 2;
         match opcode {
             0 => {// The adv instruction (opcode 0) performs division.
@@ -162,22 +220,10 @@ fn execute_program(registers: &mut HashMap<char, usize>, program: &Vec<u8>)->Str
         }
         i+=increment;
     }
-    output.iter()
-        .map(|num| num.to_string())
-        .collect::<Vec<_>>()
-        .join(",")
+    // output.iter()
+    //     .map(|num| num.to_string())
+    //     .collect::<Vec<_>>()
+    //     .join(",")
+    vec2line(output)
 }
-
-// Combo operands
-// 0-3: represent literal values 0 through 3.
-// 4-6: represents the value of register A-C.
-// Combo operand 7 is reserved and will not appear in valid programs.
-
-
-// The bxl instruction (opcode 1) calculates the bitwise XOR of register B and the instruction's literal operand,
-// then stores the result in register B.
-
-// The bxc instruction (opcode 4) calculates the bitwise XOR of register B and register C,
-// then stores the result in register B. (For legacy reasons, this instruction reads an operand but ignores it.)
-
 
