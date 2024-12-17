@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Display};
 use std::fs::File;
 use std::io::{self, BufRead, Write};
 use std::path::Path;
@@ -104,9 +105,9 @@ pub fn no_solution_message(part: u8) -> String{
     format!("Part {} not solved", part)
 }
 
-pub fn assert_display(result: usize,
-         result_test: Option<usize>,
-         result_prd: usize,
+pub fn assert_display<T: Debug+Display+PartialEq>(result: T,
+         result_test: Option<T>,
+         result_prd: T,
          header: &str,
          test_mode: bool
 ) -> Result<String, String>{
