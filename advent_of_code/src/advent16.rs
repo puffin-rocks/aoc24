@@ -1,7 +1,6 @@
 use std::cmp::{Ordering, Reverse};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::rc::Rc;
-use rayon::prelude::*;
 use crate::geometry::{Canvas, Direction, Point2D};
 use crate::utils::{Solve, Label, assert_display};
 
@@ -83,14 +82,14 @@ impl Advent {
             queue.push(Reverse(ScoredPosition::new(0, 0, start_dir, start_pos, path)));
 
             let mut min_score: Option<usize> = None;
-            let mut threshold: usize = 20_000;
+            //let mut threshold: usize = 20_000;
             let mut points: HashSet<Rc<Point2D>> = HashSet::new();
 
             while let Some(Reverse(p)) = queue.pop() {
-                if p.score > threshold {
-                    println!("{:?}", &p.score);
-                    threshold += 20_000;
-                }
+                // if p.score > threshold {
+                //     println!("{:?}", &p.score);
+                //     threshold += 20_000;
+                // }
 
                 if let Some(s) = min_score {
                     if p.score > s {
