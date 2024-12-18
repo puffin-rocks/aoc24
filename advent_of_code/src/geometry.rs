@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul, Sub};
 use std::rc::Rc;
@@ -151,6 +152,12 @@ impl Hash for Point2D {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.x.hash(state); // Include `x` in the hash
         self.y.hash(state); // Include `y` in the hash
+    }
+}
+
+impl fmt::Display for Point2D {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }
 
@@ -542,6 +549,15 @@ impl ScoredPosition{
             direction,
             location,
             path
+        }
+    }
+    pub(crate) fn simple(score: usize, location: Rc<Point2D>)->Self{
+        Self{
+            id: 0,
+            score,
+            direction:Direction::None,
+            location,
+            path: HashSet::new()
         }
     }
 }
