@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::hash::{Hash, Hasher};
 use std::ops::{Add, Mul, Sub};
 use std::rc::Rc;
@@ -524,3 +524,40 @@ impl CanvasAsync {
     //     })
     // }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ScoredPosition{
+    id: usize,
+    pub(crate) score: usize,
+    pub(crate) direction: Direction,
+    pub(crate) location: Rc<Point2D>,
+    pub(crate) path: HashSet<Rc<Point2D>>
+}
+
+impl ScoredPosition{
+    pub(crate) fn new(id:usize, score: usize, direction: Direction, location: Rc<Point2D>, path: HashSet<Rc<Point2D>>)->Self{
+        Self{
+            id,
+            score,
+            direction,
+            location,
+            path
+        }
+    }
+}
+
+impl Eq for ScoredPosition {}
+
+impl PartialOrd<Self> for ScoredPosition {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ScoredPosition{
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.score.cmp(&other.score).then_with(|| self.id.cmp(&other.id))
+    }
+}
+
+//.then_with(|| self.path.len().cmp(&other.path.len()))

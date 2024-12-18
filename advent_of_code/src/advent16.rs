@@ -1,44 +1,9 @@
-use std::cmp::{Ordering, Reverse};
+use std::cmp::{Reverse};
 use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::rc::Rc;
-use crate::geometry::{Canvas, Direction, Point2D};
+use crate::geometry::{Canvas, Direction, Point2D, ScoredPosition};
 use crate::utils::{Solve, Label, assert_display};
 
-
-#[derive(Debug, Clone, PartialEq)]
-struct ScoredPosition{
-    id: usize,
-    score: usize,
-    direction: Direction,
-    location: Rc<Point2D>,
-    path: HashSet<Rc<Point2D>>
-}
-
-impl ScoredPosition{
-    fn new(id:usize, score: usize, direction: Direction, location: Rc<Point2D>, path: HashSet<Rc<Point2D>>)->Self{
-        Self{
-            id,
-            score,
-            direction,
-            location,
-            path
-        }
-    }
-}
-
-impl Eq for ScoredPosition {}
-
-impl PartialOrd<Self> for ScoredPosition {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for ScoredPosition{
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.score.cmp(&other.score).then_with(|| self.id.cmp(&other.id))
-    }
-}
 
 pub(crate) struct Advent {
     label: Label,
@@ -69,7 +34,7 @@ impl Advent {
         let finish = self.canvas.try_locate_element(&'E')?;
         let obstacles = self.canvas.try_locate_element(&'#')?;
         if start.len()==1 && finish.len()==1 {
-            let finish_p = finish.first().unwrap();
+            let finish_pos = finish.first().unwrap();
             let start_dir = Direction::Right;
             let start_pos = start.first().unwrap().clone();
             let mut visited: HashMap<(Direction, Rc<Point2D>), usize> = HashMap::new();
@@ -79,7 +44,8 @@ impl Advent {
             if collect_paths {
                 path.insert(start_pos.clone());
             }
-            queue.push(Reverse(ScoredPosition::new(0, 0, start_dir, start_pos, path)));
+            let mut id = 0;
+            queue.push(Reverse(ScoredPosition::new(id, 0, start_dir, start_pos, path)));
 
             let mut min_score: Option<usize> = None;
             //let mut threshold: usize = 20_000;
@@ -95,14 +61,14 @@ impl Advent {
                     if p.score > s {
                         break;
                     }
-                    if p.score == s && p.location == *finish_p {
+                    if p.score == s && p.location == *finish_pos {
                         points.extend(p.path.iter().cloned());
                     }
                 }
 
                 visited.insert((p.direction, p.location.clone()), p.score);
 
-                if p.location == *finish_p {
+                if p.location == *finish_pos {
                     min_score = Some(p.score);
                     if collect_paths {
                         points.extend(p.path.iter().cloned());
@@ -138,7 +104,8 @@ impl Advent {
                             } else {
                                 HashSet::new()
                             };
-                            queue.push(Reverse(ScoredPosition::new(0, next_score, d, next_p, next_path)));
+                            id+=1;
+                            queue.push(Reverse(ScoredPosition::new(id, next_score, d, next_p, next_path)));
                         }
                     }
                 });
@@ -152,7 +119,7 @@ impl Advent {
                 assert_display(result, Some(result_test), result_prd, header, test_mode)
             }
             else{
-                Err(String::from("No lowest score foung"))
+                Err(String::from("No lowest score found"))
             }
         }else{
             Err(String::from("Multiple start or end locations"))
