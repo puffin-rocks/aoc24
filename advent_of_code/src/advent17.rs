@@ -29,6 +29,26 @@ impl Advent{
         let out = execute_program(&mut registers, &self.program[..n - 2].to_vec(), false);
         (out.parse::<u8>().expect("Cannot parse output"), *registers.get(&A).expect("Register A does not exist"))
     }
+
+    fn input_is_valid(&self) -> bool{
+        let n = self.program.len();
+        if n<6{
+            return false;
+        }
+        if self.program[n-1]!=0 || self.program[n-2]!=3{
+            return false;
+        }
+        if self.program[n-3]<4 || self.program[n-3]>6 || self.program[n-4]!=5{
+            return false;
+        }
+        for (i, &elem) in self.program.iter().enumerate().filter(|(i, _)| (i % 2 == 0) && *i<n-4)  {
+            if elem == 0 && (self.program[i+1]<1 || self.program[i+1]>3){
+                return false;
+            }
+        }
+        true
+    }
+
 }
 
 impl Solve for Advent {
@@ -105,6 +125,9 @@ impl Solve for Advent {
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
+        if !self.input_is_valid(){
+            return Err(String::from("Problem is not solved for this structure of input"))
+        }
         let a0 = *self.registers.get(&A).unwrap();
         let (_, a1) = self.calculate_one_output(a0);
         let coef = a0/a1; //how much A decreases
