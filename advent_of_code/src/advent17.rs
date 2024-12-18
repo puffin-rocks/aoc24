@@ -132,17 +132,15 @@ impl Solve for Advent {
         let (_, a1) = self.calculate_one_output(a0);
         let coef = a0/a1; //how much A decreases
 
-        let mut i = self.program.len()-1;
         let mut steps: HashMap<usize, usize> = HashMap::new();
         steps.insert(self.program.len(), 0); //initial A
-
+        let mut i = self.program.len()-1;
         loop {
             let mut a = *steps.get(&(i+1)).unwrap()*coef; //where to start search
-            let v = self.program[i]; //target v
 
             loop { //search for closest A producing v
                 let (out, _) = self.calculate_one_output(a);
-                if out == v {
+                if out == self.program[i] {
                     break;
                 } else {
                     a += 1;
@@ -155,10 +153,7 @@ impl Solve for Advent {
             let mut registers: HashMap<char, usize> = HashMap::new();
             registers.insert(A, a);
             let val_r = execute_program(&mut registers, &self.program, false);
-            let val_e = self.program[i..].iter()
-                .map(|num| num.to_string())
-                .collect::<Vec<_>>()
-                .join(",");
+            let val_e = vec2line(self.program[i..].to_vec());
 
             if val_e!=val_r{
                 //safe because we came from previous step
@@ -243,10 +238,6 @@ fn execute_program(registers: &mut HashMap<char, usize>, program: &Vec<u8>, verb
         }
         i+=increment;
     }
-    // output.iter()
-    //     .map(|num| num.to_string())
-    //     .collect::<Vec<_>>()
-    //     .join(",")
     vec2line(output)
 }
 
