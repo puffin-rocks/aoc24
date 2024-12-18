@@ -7,7 +7,8 @@ const C: char = 'C';
 pub(crate) struct Advent {
     label: Label,
     registers: HashMap<char, usize>,
-    program: Vec<u8>
+    program: Vec<u8>,
+    use_bruteforce: bool
 }
 
 
@@ -16,7 +17,8 @@ impl Default for Advent {
         Self {
             label: Label::new(17),
             registers: HashMap::new(),
-            program: Vec::new()
+            program: Vec::new(),
+            use_bruteforce: false
         }
     }
 }
@@ -38,9 +40,6 @@ impl Advent{
         if self.program[n-1]!=0 || self.program[n-2]!=3{
             return false;
         }
-        if self.program[n-3]<4 || self.program[n-3]>6 || self.program[n-4]!=5{
-            return false;
-        }
         for (i, &elem) in self.program.iter().enumerate().filter(|(i, _)| (i % 2 == 0) && *i<n-4)  {
             if elem == 0 && (self.program[i+1]<1 || self.program[i+1]>3){
                 return false;
@@ -54,6 +53,11 @@ impl Advent{
 impl Solve for Advent {
     fn get_label(&self) -> &Label{ &self.label }
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
+
+    fn apply_bruteforce(&mut self){
+        println!("...Applying bruteforce...");
+        self.use_bruteforce = true;
+    }
 
     fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError> {
         if let Some((label, value)) = line.split_once(": ") {
@@ -128,44 +132,71 @@ impl Solve for Advent {
         if !self.input_is_valid(){
             return Err(String::from("Problem is not solved for this structure of input"))
         }
+
         let a0 = *self.registers.get(&A).unwrap();
         let (_, a1) = self.calculate_one_output(a0);
         let coef = a0/a1; //how much A decreases
 
-        let mut steps: HashMap<usize, usize> = HashMap::new();
-        steps.insert(self.program.len(), 0); //initial A
-        let mut i = self.program.len()-1;
-        loop {
-            let mut a = *steps.get(&(i+1)).unwrap()*coef; //where to start search
+        let result = if self.use_bruteforce {
+            //solution is correct, but in some cases can be super slow because of small increment
+            let mut steps: HashMap<usize, usize> = HashMap::new();
+            steps.insert(self.program.len(), 0); //initial A
+            let mut i = self.program.len() - 1;
+            loop {
+                let mut a = *steps.get(&(i + 1)).unwrap() * coef; //where to start search
+                loop { //search for closest A producing v
+                    let (out, _) = self.calculate_one_output(a);
+                    if out == self.program[i] {
+                        break;
+                    } else {
+                        a += 1;
+                    }
+                }
+                steps.insert(i, a);
 
-            loop { //search for closest A producing v
-                let (out, _) = self.calculate_one_output(a);
-                if out == self.program[i] {
-                    break;
+                //sometimes found closest A does not produce the sequence back
+                //we check that and if this is the case, we increase previous A by 1 and repeat the step
+                let mut registers: HashMap<char, usize> = HashMap::new();
+                registers.insert(A, a);
+                let val_r = execute_program(&mut registers, &self.program, false);
+                let val_e = vec2line(self.program[i..].to_vec());
+
+                if val_e != val_r {
+                    //safe because we came from previous step
+                    *steps.entry(i + 1).or_insert(0) += 1;
                 } else {
-                    a += 1;
+                    if i == 0 {
+                        break;
+                    }
+                    i -= 1;
                 }
             }
-            steps.insert(i, a);
+            *steps.get(&0).unwrap()
+        } else {
+            //Solution of Marco B
+                let mut result = Vec::from([0]);
 
-            //sometimes found closest A does not produce the sequence back
-            //we check that and if this is the case, we increase previous A by 7 and repeat the step
-            let mut registers: HashMap<char, usize> = HashMap::new();
-            registers.insert(A, a);
-            let val_r = execute_program(&mut registers, &self.program, false);
-            let val_e = vec2line(self.program[i..].to_vec());
+                for operand in self.program.iter().rev() {
+                    let mut result2 = Vec::new();
 
-            if val_e!=val_r{
-                //safe because we came from previous step
-                *steps.entry(i+1).or_insert(0)+=7;
-            }else{
-                if i == 0 {
-                    break;
+                    for res in result {
+                        for n in 0..=7 {
+                            // Every value in the output only changes after every power of 8
+                            // First number changes every 1, second every 8, third every 64, etc...
+                            // So we can convert A to the target times 8 plus the nth position (shift 3 bits)
+                            let a = res * coef + n;
+                            let (out, _) = self.calculate_one_output(a);
+                            if *operand == out {
+                                result2.push(a)
+                            }
+                        }
+                    }
+                    result = result2;
                 }
-                i-=1;
-            }
-        }
-        assert_display(*steps.get(&0).unwrap(), Some(117440), 105981155568026, "Lowest A to repeat itself", test_mode)
+                *result.iter().min().unwrap()
+            };
+
+        assert_display(result, Some(117440), 105981155568026, "Lowest A to repeat itself", test_mode)
     }
 }
 
