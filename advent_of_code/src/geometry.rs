@@ -35,6 +35,15 @@ impl Direction {
             Direction::ToPoint(p) => Direction::ToPoint(Point2D::new(-p.x, -p.y))
         }
     }
+    pub(crate) fn complimentary_base(self) -> [Direction;3]{
+        match self {
+            Direction::Up => [Direction::Down, Direction::Left, Direction::Right],
+            Direction::Right => [Direction::Left, Direction::Up, Direction::Down],
+            Direction::Down => [Direction::Up, Direction::Left, Direction::Right],
+            Direction::Left => [Direction::Right, Direction::Up, Direction::Down],
+            _ => unreachable!()
+        }
+    }
     pub(crate) fn to_tuple(&self) -> (isize, isize) {
         match self {
             Direction::Up => (0, 1),
@@ -518,12 +527,12 @@ impl CanvasAsync {
         &self.elements
     }
 
-    // pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Arc<Point2D>>, String> {
-    //     match self.elements.get(el) {
-    //         None => Err(format!("Cannot locate {}", el)),
-    //         Some(locations) => { Ok(locations) }
-    //     }
-    // }
+    pub(crate) fn try_locate_element(&self, el: &char) -> Result<&BTreeSet<Arc<Point2D>>, String> {
+         match self.elements.get(el) {
+             None => Err(format!("Cannot locate {}", el)),
+             Some(locations) => { Ok(locations) }
+         }
+    }
     //
     // pub(crate) fn iter(&self) -> impl Iterator<Item=Point2D> + '_ {
     //     (0..self.width).flat_map(move |i| {
@@ -576,4 +585,33 @@ impl Ord for ScoredPosition{
     }
 }
 
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct ScoredPositionAsync{
+    pub(crate) score: usize,
+    pub(crate) location: Arc<Point2D>
+}
+
+impl ScoredPositionAsync {
+    pub(crate) fn new(score: usize, location: Arc<Point2D>)->Self{
+        Self{
+            score,
+            location
+        }
+    }
+}
+
+impl Eq for ScoredPositionAsync {}
+
+impl PartialOrd<Self> for ScoredPositionAsync{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for ScoredPositionAsync {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.score.cmp(&other.score)
+    }
+}
 //.then_with(|| self.path.len().cmp(&other.path.len()))
