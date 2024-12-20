@@ -1,11 +1,10 @@
-use std::cmp::Reverse;
-use std::collections::{BTreeSet, BinaryHeap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use crate::utils::{Solve, Label, assert_display};
 
 pub(crate) struct Advent {
     label: Label,
     read_patterns: bool,
-    patterns: HashSet<String>,
+    patterns: BTreeSet<String>,
     towels: Vec<String>
 }
 
@@ -15,7 +14,7 @@ impl Default for Advent {
         Self {
             label: Label::new(19),
             read_patterns: true,
-            patterns: HashSet::new(),
+            patterns: BTreeSet::new(),
             towels: Vec::new()
         }
     }
@@ -52,13 +51,16 @@ impl Solve for Advent {
         ).sum();
         assert_display(n, Some(6), 238, "Number of matchable towels", test_mode)
     }
-    // fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
-    //     self.check_input(Some(2))?;
-    //     Err(String::from("Not solved yet"))
-    // }
+    fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
+        let n: usize = self.towels.iter().map(|t|
+             match_towel_count(t, &self.patterns)
+        ).sum();
+        assert_display(n, Some(16), 635018909726691, "Number of possible matchings", test_mode)
+    }
 }
 
-fn match_towel(towel: &String, patterns: &HashSet<String>) -> bool{
+fn match_towel(towel: &String, patterns: &BTreeSet<String>) -> bool{
     let mut queue: BTreeSet<String> = BTreeSet::new();
     queue.insert(towel.clone());
 
@@ -75,29 +77,27 @@ fn match_towel(towel: &String, patterns: &HashSet<String>) -> bool{
     false
 }
 
-fn _match_towel(towel: &String, patterns: &HashSet<String>) -> bool{
-    let mut queue: BinaryHeap<Reverse<String>> = BinaryHeap::new();
-    queue.push(Reverse(towel.clone()));
-    let mut matchable: bool = false;
-
-    while let Some(Reverse(part)) = queue.pop() {
-        println!("{:?}", part);
-        let mut found_next_match = false;
-        patterns.iter().for_each(|p| {
-            println!("{:?}", p);
-            if part==*p{
-                matchable = true;
+fn match_towel_count(towel: &String, patterns: &BTreeSet<String>) -> usize{
+    let mut queue: BTreeMap<String, (String, usize)> = BTreeMap::new();
+    queue.insert(String::from(""),(towel.clone(), 1));
+    while let Some((head, (tail, cnt))) = queue.pop_first(){
+        for p in patterns.iter(){
+            if tail.starts_with(p){
+                let mut new_key = head.clone();
+                new_key.push_str(p);
+                match queue.get_mut(&new_key){
+                    None =>{
+                        queue.insert(new_key, (tail[p.len()..].to_string().clone(), cnt));
+                    }
+                    Some(entry)=>{
+                        entry.1+=cnt;
+                    }
+                }
             }
-            if part.starts_with(p){
-                queue.push(Reverse(part[p.len()..].to_string()));
-                found_next_match = true;
-            }
-        });
-        println!("{:?}", queue);
-        if !found_next_match || matchable{
-            break
+        }
+        if queue.len()==1 && queue.contains_key(towel){
+            break;
         }
     }
-    println!("{:?}", matchable);
-    matchable
+    queue.get(towel).unwrap_or(&(String::new(),0)).1
 }
