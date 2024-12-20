@@ -162,8 +162,16 @@ impl Solve for Advent {
                 let val_e = vec2line(self.program[i..].to_vec());
 
                 if val_e != val_r {
-                    //safe because we came from previous step
-                    *steps.entry(i + 1).or_insert(0) += 1;
+                    a = steps.get(&(i + 1)).unwrap()+1;
+                    loop { //search for closest A producing v
+                        let (out, _) = self.calculate_one_output(a);
+                        if out == self.program[i+1] {
+                            break;
+                        } else {
+                            a += 1;
+                        }
+                    }
+                    steps.insert(i+1, a);
                 } else {
                     if i == 0 {
                         break;
@@ -181,6 +189,7 @@ impl Solve for Advent {
 
                     for res in result {
                         for n in 0..=7 {
+                            // recursion from all possible combinations
                             // Every value in the output only changes after every power of 8
                             // First number changes every 1, second every 8, third every 64, etc...
                             // So we can convert A to the target times 8 plus the nth position (shift 3 bits)
