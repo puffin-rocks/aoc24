@@ -54,6 +54,64 @@ impl Advent {
         }
         visited
     }
+
+    fn solve(
+        &self,
+        max_cheats: usize,
+        result_test: usize,
+        result_prd: usize,
+        test_mode: bool,
+        part: u8
+    ) -> Result<String, String> {
+        self.check_input(Some(part))?;
+        let threshold = if test_mode{
+            19
+        }else{
+            99
+        };
+        let start = self.canvas.try_locate_element(&'S')?;
+        let finish = self.canvas.try_locate_element(&'E')?;
+        let obstacles = self.canvas.try_locate_element(&'#')?;
+        if start.len() == 1 && finish.len() == 1 {
+            let finish_pos = finish.first().unwrap();
+            let visited_finish = self.shortest_path(obstacles, finish_pos, None);
+            let start_pos = start.first().unwrap();
+            let visited_start = self.shortest_path(obstacles, start_pos, None);
+
+            if let Some(&benchmark) = visited_start.get(finish_pos) {
+                let result: usize = visited_start.iter().collect::<Vec<_>>().par_iter().map(|(cheat_entry, &s_dist)|{
+                    let mut cheats: HashMap<(Arc<Point2D>, Arc<Point2D>), usize> = HashMap::new();
+                    let reachable = self.shortest_path(&BTreeSet::new(), &cheat_entry, Some(max_cheats));
+                    for (p, &length) in reachable.iter() {
+                        for fd in Direction::base() {
+                            let cheat_exit = p + &fd;
+                            if let Some(&f_dist) = visited_finish.get(&cheat_exit) {
+                                let gain = benchmark.saturating_sub(f_dist + s_dist + length + 1);
+                                let cheat_key = ((*cheat_entry).clone(), cheat_exit.clone());
+                                if gain>threshold {
+                                    let insert_cheat = if let Some(max_gain) = cheats.get(&cheat_key){
+                                        gain>*max_gain
+                                    }else{
+                                        true
+                                    };
+                                    if insert_cheat{
+                                        cheats.insert(cheat_key, gain);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    cheats.len()
+                }).sum();
+                assert_display(result, Some(result_test), result_prd, format!("Number of cheats better than {}", threshold).as_str(), test_mode)
+            } else {
+                Err(String::from("Finish position not reached"))
+            }
+        } else {
+            Err(String::from("Multiple start or end locations"))
+        }
+    }
+
 }
 
 
@@ -71,92 +129,9 @@ impl Solve for Advent {
         Ok(())
     }
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String> {
-        self.check_input(Some(1))?;
-        let threshold = if test_mode{
-            19
-        }else{
-            99
-        };
-        let start = self.canvas.try_locate_element(&'S')?;
-        let finish = self.canvas.try_locate_element(&'E')?;
-        let obstacles = self.canvas.try_locate_element(&'#')?;
-        if start.len() == 1 && finish.len() == 1 {
-            let finish_pos = finish.first().unwrap();
-            let visited_finish = self.shortest_path(obstacles, finish_pos, None);
-            let start_pos = start.first().unwrap();
-            let visited_start = self.shortest_path(obstacles, start_pos, None);
-            if let Some(&benchmark) = visited_start.get(finish_pos) {
-                let mut n_threshold: usize = 0;
-                for p in obstacles.iter() {
-                    for sd in Direction::base() {
-                        let cheat_entry = p + &sd;
-                        if let Some(&s_dist) = visited_start.get(&cheat_entry) {
-                            for fd in sd.complimentary_base() {
-                                let cheat_exit = p + &fd;
-                                if let Some(&f_dist) = visited_finish.get(&cheat_exit) {
-                                    if benchmark.saturating_sub(f_dist + s_dist + 2) > threshold {
-                                        n_threshold += 1;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                assert_display(n_threshold, Some(5), 1369, format!("Number of cheats better than {}", threshold).as_str(), test_mode)
-            } else {
-                Err(String::from("Finish position not reached"))
-            }
-        } else {
-            Err(String::from("Multiple start or end locations"))
-        }
+        self.solve(2,  5, 1369, test_mode, 1)
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
-        self.check_input(Some(2))?;
-        let threshold = if test_mode{
-            19
-        }else{
-            99
-        };
-        let start = self.canvas.try_locate_element(&'S')?;
-        let finish = self.canvas.try_locate_element(&'E')?;
-        let obstacles = self.canvas.try_locate_element(&'#')?;
-        if start.len() == 1 && finish.len() == 1 {
-            let finish_pos = finish.first().unwrap();
-            let visited_finish = self.shortest_path(obstacles, finish_pos, None);
-            let start_pos = start.first().unwrap();
-            let visited_start = self.shortest_path(obstacles, start_pos, None);
-
-            if let Some(&benchmark) = visited_start.get(finish_pos) {
-                let result: usize = visited_start.keys().collect::<Vec<_>>().par_iter().map(|&cheat_entry|{
-                    let mut cheats: HashMap<(Arc<Point2D>, Arc<Point2D>), usize> = HashMap::new();
-                    if let Some(&s_dist) = visited_start.get(cheat_entry) {
-                        let reachable = self.shortest_path(&BTreeSet::new(), cheat_entry, Some(20));
-                        for (p, &length) in reachable.iter() {
-                            for fd in Direction::base() {
-                                let cheat_exit = p + &fd;
-                                if let Some(&f_dist) = visited_finish.get(&cheat_exit) {
-                                    let gain = benchmark.saturating_sub(f_dist + s_dist + length + 1);
-                                    if gain>threshold {
-                                        if let Some(max_gain) = cheats.get(&(cheat_entry.clone(), cheat_exit.clone())){
-                                            if gain>*max_gain{
-                                                cheats.insert((cheat_entry.clone(), cheat_exit.clone()), gain);
-                                            }
-                                        }else{
-                                            cheats.insert((cheat_entry.clone(), cheat_exit.clone()), gain);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    };
-                    cheats.len()
-                }).sum();
-                assert_display(result, Some(1449), 979012, format!("Number of cheats better than {}", threshold).as_str(), test_mode)
-            } else {
-                Err(String::from("Finish position not reached"))
-            }
-        } else {
-            Err(String::from("Multiple start or end locations"))
-        }
+        self.solve(20,  1449, 979012, test_mode, 2)
     }
 }

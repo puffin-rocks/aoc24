@@ -35,6 +35,7 @@ impl Direction {
             Direction::ToPoint(p) => Direction::ToPoint(Point2D::new(-p.x, -p.y))
         }
     }
+    #[allow(dead_code)]
     pub(crate) fn complimentary_base(self) -> [Direction;3]{
         match self {
             Direction::Up => [Direction::Down, Direction::Left, Direction::Right],
