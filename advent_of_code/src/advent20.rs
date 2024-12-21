@@ -65,6 +65,11 @@ impl Solve for Advent {
     }
     fn compute_part1_answer(&self, test_mode: bool) -> Result<String, String> {
         self.check_input(Some(1))?;
+        let threshold = if test_mode{
+            19
+        }else{
+            99
+        };
         let start = self.canvas.try_locate_element(&'S')?;
         let finish = self.canvas.try_locate_element(&'E')?;
         let obstacles = self.canvas.try_locate_element(&'#')?;
@@ -82,7 +87,7 @@ impl Solve for Advent {
                             for fd in sd.complimentary_base() {
                                 let cheat_exit = p + &fd;
                                 if let Some(&f_dist) = visited_finish.get(&cheat_exit) {
-                                    if benchmark.saturating_sub(f_dist + s_dist + 2) >99 {
+                                    if benchmark.saturating_sub(f_dist + s_dist + 2) > threshold {
                                         n_threshold += 1;
                                     }
                                 }
@@ -90,7 +95,7 @@ impl Solve for Advent {
                         }
                     }
                 }
-                assert_display(n_threshold, Some(0), 1369, "Number of cheats better than 99", test_mode)
+                assert_display(n_threshold, Some(5), 1369, format!("Number of cheats better than {}", threshold).as_str(), test_mode)
             } else {
                 Err(String::from("Finish position not reached"))
             }
@@ -100,6 +105,11 @@ impl Solve for Advent {
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
+        let threshold = if test_mode{
+            19
+        }else{
+            99
+        };
         let start = self.canvas.try_locate_element(&'S')?;
         let finish = self.canvas.try_locate_element(&'E')?;
         let obstacles = self.canvas.try_locate_element(&'#')?;
@@ -127,7 +137,7 @@ impl Solve for Advent {
                 free.extend(finish.clone());
 
                 let result: usize = free.iter().collect::<Vec<_>>().par_iter().map(|&cheat_entry|{
-                    let mut cheats: HashMap<(Arc<Point2D>, Arc<Point2D>), Vec<usize>> = HashMap::new();
+                    let mut cheats: HashMap<(Arc<Point2D>, Arc<Point2D>), usize> = HashMap::new();
                     if let Some(&s_dist) = visited_start.get(cheat_entry) {
                         let reachable = self.shortest_path(&boarders, cheat_entry, Some(20));
                         for (p, &length) in reachable.iter() {
@@ -135,24 +145,25 @@ impl Solve for Advent {
                                 let cheat_exit = p + &fd;
                                 if let Some(&f_dist) = visited_finish.get(&cheat_exit) {
                                     let gain = benchmark.saturating_sub(f_dist + s_dist + length + 1);
-                                    if gain>99 {
-                                        cheats.entry((cheat_entry.clone(), cheat_exit.clone())).or_insert_with(Vec::new).push(gain);
+                                    if gain>threshold {
+                                        if let Some(max_gain) = cheats.get(&(cheat_entry.clone(), cheat_exit.clone())){
+                                            if gain>*max_gain{
+                                                cheats.insert((cheat_entry.clone(), cheat_exit.clone()), gain);
+                                            }
+                                        }else{
+                                            cheats.insert((cheat_entry.clone(), cheat_exit.clone()), gain);
+                                        }
                                     }
                                 }
                             }
                         }
                     };
-                    cheats.iter()
-                        .map(|e| (e.0.clone(), *e.1.iter().max().unwrap_or(&0))).count()
+                    cheats.len()
                 }).sum();
-                println!("{:?}", result);
-
-
-                Err(String::from("Not solved yet"))
+                assert_display(result, Some(1449), 979012, format!("Number of cheats better than {}", threshold).as_str(), test_mode)
             } else {
                 Err(String::from("Finish position not reached"))
             }
-
         } else {
             Err(String::from("Multiple start or end locations"))
         }
