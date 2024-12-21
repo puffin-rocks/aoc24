@@ -1,8 +1,7 @@
-use std::cmp::Reverse;
-use std::collections::{BTreeSet, BinaryHeap, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 use rayon::prelude::*;
-use crate::geometry::{CanvasAsync, Direction, Point2D, ScoredPositionAsync};
+use crate::geometry::{CanvasAsync, Direction, Point2D};
 use crate::utils::{Solve, Label, assert_display};
 
 pub(crate) struct Advent {
@@ -24,27 +23,35 @@ impl Advent {
     fn shortest_path(&self, obstacles: &BTreeSet<Arc<Point2D>>, start_pos: &Arc<Point2D>, n_steps: Option<usize>) -> HashMap<Arc<Point2D>, usize>
     {
         let mut visited: HashMap<Arc<Point2D>, usize> = HashMap::new();
-        visited.insert(start_pos.clone(), 0);
-        let mut queue: BinaryHeap<Reverse<ScoredPositionAsync>> = BinaryHeap::new();
-        queue.push(Reverse(ScoredPositionAsync::new(0, start_pos.clone())));
+        let mut step: usize = 0;
+        visited.insert(start_pos.clone(), step);
+        let mut stack: HashSet<Arc<Point2D>> = HashSet::new();
+        stack.insert(start_pos.clone());
+        loop{
+            step+=1;
 
-        while let Some(Reverse(p)) = queue.pop() {
-            Direction::base().iter().for_each(|&d| {
-                let next_p = &p.location + &d;
-                if !obstacles.contains(&next_p) {
-                    let next_score = 1 + p.score;
-                    let continue_search = if let Some(n_steps) = n_steps{
-                        next_score < n_steps
-                    }else{
-                        true
-                    };
-                    if visited.get(&next_p.clone()).is_none() && continue_search {
-                        visited.insert(next_p.clone(), next_score);
-                        queue.push(Reverse(ScoredPositionAsync::new(next_score, next_p)));
+            let mut next_stack: HashSet<Arc<Point2D>> = HashSet::new();
+            for p in stack.iter(){
+                Direction::base().iter().for_each(|&d| {
+                    let next_p = p + &d;
+                    if !obstacles.contains(&next_p) {
+                        let continue_search = if let Some(n_steps) = n_steps {
+                            step < n_steps
+                        } else {
+                            true
+                        };
+                        if visited.get(&next_p.clone()).is_none() && continue_search {
+                            visited.insert(next_p.clone(), step);
+                            next_stack.insert(next_p);
+                        }
                     }
-                }
-            });
-        };
+                })
+            }
+            if next_stack.is_empty(){
+                break;
+            }
+            stack = next_stack;
+        }
         visited
     }
 }
@@ -113,33 +120,17 @@ impl Solve for Advent {
         let start = self.canvas.try_locate_element(&'S')?;
         let finish = self.canvas.try_locate_element(&'E')?;
         let obstacles = self.canvas.try_locate_element(&'#')?;
-        let mut free: BTreeSet<Arc<Point2D>> = self.canvas.try_locate_element(&'.')?.iter().cloned().collect();
         if start.len() == 1 && finish.len() == 1 {
             let finish_pos = finish.first().unwrap();
             let visited_finish = self.shortest_path(obstacles, finish_pos, None);
             let start_pos = start.first().unwrap();
             let visited_start = self.shortest_path(obstacles, start_pos, None);
 
-            let (&width, &height) = self.canvas.shape();
-            let mut boarders: BTreeSet<Arc<Point2D>> = BTreeSet::new();
-            //insert boarders
-            for i in 0..width{
-                boarders.insert(Arc::new(Point2D::new(i as isize, -1)));
-                boarders.insert(Arc::new(Point2D::new(i as isize, height as isize)));
-            }
-            for i in 0..height{
-                boarders.insert(Arc::new(Point2D::new(-1, i as isize)));
-                boarders.insert(Arc::new(Point2D::new(width as isize, i as isize)));
-            }
-
             if let Some(&benchmark) = visited_start.get(finish_pos) {
-                free.extend(start.clone());
-                free.extend(finish.clone());
-
-                let result: usize = free.iter().collect::<Vec<_>>().par_iter().map(|&cheat_entry|{
+                let result: usize = visited_start.keys().collect::<Vec<_>>().par_iter().map(|&cheat_entry|{
                     let mut cheats: HashMap<(Arc<Point2D>, Arc<Point2D>), usize> = HashMap::new();
                     if let Some(&s_dist) = visited_start.get(cheat_entry) {
-                        let reachable = self.shortest_path(&boarders, cheat_entry, Some(20));
+                        let reachable = self.shortest_path(&BTreeSet::new(), cheat_entry, Some(20));
                         for (p, &length) in reachable.iter() {
                             for fd in Direction::base() {
                                 let cheat_exit = p + &fd;

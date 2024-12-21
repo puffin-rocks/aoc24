@@ -584,34 +584,4 @@ impl Ord for ScoredPosition{
         self.score.cmp(&other.score).then_with(|| self.id.cmp(&other.id))
     }
 }
-
-
-#[derive(Debug, Clone, PartialEq)]
-pub(crate) struct ScoredPositionAsync{
-    pub(crate) score: usize,
-    pub(crate) location: Arc<Point2D>
-}
-
-impl ScoredPositionAsync {
-    pub(crate) fn new(score: usize, location: Arc<Point2D>)->Self{
-        Self{
-            score,
-            location
-        }
-    }
-}
-
-impl Eq for ScoredPositionAsync {}
-
-impl PartialOrd<Self> for ScoredPositionAsync{
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for ScoredPositionAsync {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.score.cmp(&other.score)
-    }
-}
 //.then_with(|| self.path.len().cmp(&other.path.len()))
