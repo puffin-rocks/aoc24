@@ -1,6 +1,5 @@
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet};
-use std::rc::Rc;
+use std::collections::{BTreeSet, BinaryHeap, HashMap};
 use std::sync::Arc;
 use rayon::prelude::*;
 use crate::geometry::{CanvasAsync, Direction, Point2D, ScoredPositionAsync};
@@ -22,7 +21,7 @@ impl Default for Advent {
 }
 
 impl Advent {
-    fn shortest_path(&self, obstacles: &BTreeSet<Arc<Point2D>>, start_pos: &Arc<Point2D>, n_steps: Option<usize>, restrictions: &BTreeSet<Arc<Point2D>>) -> HashMap<Arc<Point2D>, usize>
+    fn shortest_path(&self, obstacles: &BTreeSet<Arc<Point2D>>, start_pos: &Arc<Point2D>, n_steps: Option<usize>) -> HashMap<Arc<Point2D>, usize>
     {
         let mut visited: HashMap<Arc<Point2D>, usize> = HashMap::new();
         visited.insert(start_pos.clone(), 0);
@@ -35,11 +34,7 @@ impl Advent {
                 if !obstacles.contains(&next_p) {
                     let next_score = 1 + p.score;
                     let continue_search = if let Some(n_steps) = n_steps{
-                        if next_score == 1 {
-                            restrictions.contains(&next_p)
-                        }else {
-                            next_score < n_steps
-                        }
+                        next_score < n_steps
                     }else{
                         true
                     };
@@ -75,9 +70,9 @@ impl Solve for Advent {
         let obstacles = self.canvas.try_locate_element(&'#')?;
         if start.len() == 1 && finish.len() == 1 {
             let finish_pos = finish.first().unwrap();
-            let visited_finish = self.shortest_path(obstacles, finish_pos, None, &BTreeSet::new());
+            let visited_finish = self.shortest_path(obstacles, finish_pos, None);
             let start_pos = start.first().unwrap();
-            let visited_start = self.shortest_path(obstacles, start_pos, None,  &BTreeSet::new());
+            let visited_start = self.shortest_path(obstacles, start_pos, None);
             if let Some(&benchmark) = visited_start.get(finish_pos) {
                 let mut n_threshold: usize = 0;
                 for p in obstacles.iter() {
@@ -87,7 +82,7 @@ impl Solve for Advent {
                             for fd in sd.complimentary_base() {
                                 let cheat_exit = p + &fd;
                                 if let Some(&f_dist) = visited_finish.get(&cheat_exit) {
-                                    if benchmark.saturating_sub(f_dist + s_dist + 2) >= 100 {
+                                    if benchmark.saturating_sub(f_dist + s_dist + 2) >99 {
                                         n_threshold += 1;
                                     }
                                 }
@@ -111,9 +106,10 @@ impl Solve for Advent {
         let mut free: BTreeSet<Arc<Point2D>> = self.canvas.try_locate_element(&'.')?.iter().cloned().collect();
         if start.len() == 1 && finish.len() == 1 {
             let finish_pos = finish.first().unwrap();
-            let visited_finish = self.shortest_path(obstacles, finish_pos, None, &BTreeSet::new());
+            let visited_finish = self.shortest_path(obstacles, finish_pos, None);
             let start_pos = start.first().unwrap();
-            let visited_start = self.shortest_path(obstacles, start_pos, None, &BTreeSet::new());
+            let visited_start = self.shortest_path(obstacles, start_pos, None);
+
             let (&width, &height) = self.canvas.shape();
             let mut boarders: BTreeSet<Arc<Point2D>> = BTreeSet::new();
             //insert boarders
@@ -130,54 +126,27 @@ impl Solve for Advent {
                 free.extend(start.clone());
                 free.extend(finish.clone());
 
-                let result = free.iter().collect::<Vec<_>>().par_iter().map(|&cheat_entry|{
-                    let mut result: HashMap<usize,usize> = HashMap::new();
-                    let mut best_cheats: HashMap<(Arc<Point2D>, usize), usize> = HashMap::new();
-                    let mut cheats: HashMap<(Arc<Point2D>, usize, usize), Vec<Arc<Point2D>>> = HashMap::new();
-
+                let result: usize = free.iter().collect::<Vec<_>>().par_iter().map(|&cheat_entry|{
+                    let mut cheats: HashMap<(Arc<Point2D>, Arc<Point2D>), Vec<usize>> = HashMap::new();
                     if let Some(&s_dist) = visited_start.get(cheat_entry) {
-                        let reachable = self.shortest_path(&boarders, cheat_entry, Some(20), &obstacles);
+                        let reachable = self.shortest_path(&boarders, cheat_entry, Some(20));
                         for (p, &length) in reachable.iter() {
-                            if !obstacles.contains(p){
-                                continue;
-                            }
                             for fd in Direction::base() {
                                 let cheat_exit = p + &fd;
                                 if let Some(&f_dist) = visited_finish.get(&cheat_exit) {
-                                    let curr_length = f_dist + s_dist + length + 1;
-                                    // if benchmark.saturating_sub(curr_length) == 76{
-                                    //     println!("{:?}", (cheat_entry.clone(), cheat_exit.clone(), f_dist, length, curr_length));
-                                    // }
-                                    cheats.entry((cheat_entry.clone(), f_dist, curr_length) ).or_insert_with()
-                                    if let Some(min_length) = best_cheats.get(&(cheat_entry.clone(), f_dist)){
-                                        if curr_length<*min_length{
-                                            best_cheats.insert((cheat_entry.clone(), f_dist), curr_length);
-                                        }
-                                    }else{
-                                        best_cheats.insert((cheat_entry.clone(), f_dist), curr_length);
+                                    let gain = benchmark.saturating_sub(f_dist + s_dist + length + 1);
+                                    if gain>99 {
+                                        cheats.entry((cheat_entry.clone(), cheat_exit.clone())).or_insert_with(Vec::new).push(gain);
                                     }
                                 }
                             }
                         }
                     };
-                    for v in best_cheats.values() {
-                        let gain = benchmark.saturating_sub(*v);
-                        *result.entry(gain).or_insert(0) += 1;
-                    }
-                    result
-                })
-                .reduce(HashMap::new, |mut acc, map| {
-                    for (key, value) in map {
-                        *acc.entry(key).or_insert(0) += value;
-                    }
-                    acc
-                }
-                );
-                for (k, v) in result.into_iter().collect::<BTreeMap<usize,usize>>().iter(){
-                    if *k>49{
-                        println!("{:?}", (v, k));
-                    }
-                }
+                    cheats.iter()
+                        .map(|e| (e.0.clone(), *e.1.iter().max().unwrap_or(&0))).count()
+                }).sum();
+                println!("{:?}", result);
+
 
                 Err(String::from("Not solved yet"))
             } else {
