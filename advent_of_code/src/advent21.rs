@@ -38,30 +38,30 @@ impl Advent{
         for from in dkp.values() {
             for to in dkp.values() {
                 if let Some(mut seqs) = process_pair(from, to, &dkp) {
-                    memory_len_base.insert((max_depth, *from, *to), seqs.first().unwrap().len());
+                    memory_len_base.insert((max_depth, *from, *to), seqs.first()
+                        .unwrap_or_else(|| panic!("No sequences returned for pair {:?}", (from, to))).len());
                     if seqs.len() > 1 {
                         seqs.sort_unstable();
                         unresolved_values.push(seqs);
                         unresolved_keys.push((*from, *to));
                     } else {
-                        memory_seq_base.insert([*from, *to], seqs.get(0)
-                            .expect(format!("Empty sequence for {:?}", (from, to)).as_str())
+                        memory_seq_base.insert([*from, *to], seqs.first()
+                            .unwrap_or_else(|| panic!("No sequences returned for pair {:?}", (from, to)))
                             .clone());
                     }
                 }
             }
         }
-        let mut results: Vec<usize> = Vec::new();
-        for combination in unresolved_values.into_iter().multi_cartesian_product() {
+        let result = unresolved_values.into_iter().multi_cartesian_product().map(|combination| {
             let mut memory_len = memory_len_base.clone();
             let mut memory_seq = memory_seq_base.clone();
             let zipped = unresolved_keys.iter().zip(combination.iter());
             for (k, v) in zipped {
                 memory_seq.insert([k.0, k.1], v.clone());
             }
-            let result: usize = self.codes.iter().map(|code| {
+            self.codes.iter().map(|code| {
                 let shortest_seqs = keypad_input(&code, &nkp)
-                   .unwrap_or_else(|| panic!("Got no recursion input for code {:?}", code));
+                    .unwrap_or_else(|| panic!("Got no recursion input for code {:?}", code));
                 let min_len = shortest_seqs.iter().map(
                     |seq| {
                         let mut seq = seq.clone();
@@ -75,10 +75,9 @@ impl Advent{
                     .expect(format!("Cannot parse number from code {:?}", code).as_str());
                 min_len * num
             }
-            ).sum();
-            results.push(result);
-        }
-        assert_display(*results.iter().min().unwrap(), Some(result_test), result_prd, "Sum of complexities", test_mode)
+            ).sum::<usize>()
+        }).min().unwrap();
+        assert_display(result, Some(result_test), result_prd, "Sum of complexities", test_mode)
     }
 }
 
