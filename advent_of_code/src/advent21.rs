@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use std::rc::Rc;
 use itertools::Itertools;
 use crate::geometry::{Direction, Point2D};
@@ -176,7 +176,7 @@ fn keypad_input(output: &Vec<char>, keypad: &Keypad) -> Option<Vec<Vec<char>>>{
     let mut result: Vec<Vec<char>> = vec![Vec::new()];
     for curr_ch in output.iter(){
         let result_ch = process_pair(&prev_char, curr_ch, keypad)?;
-        let mut next_result = Vec::new();
+        let mut next_result = Vec::with_capacity(result.len() * result_ch.len());
         for seq_next in result_ch.iter(){
             for seq_prev in result.iter(){
                 let mut seq = seq_prev.clone();
@@ -194,41 +194,30 @@ fn point(x: isize, y: isize) -> Rc<Point2D>{
     Rc::new(Point2D::new(x,y))
 }
 fn numeric_keypad() -> Keypad{
-    // +---+---+---+
-    // | 7 | 8 | 9 |
-    // +---+---+---+
-    // | 4 | 5 | 6 |
-    // +---+---+---+
-    // | 1 | 2 | 3 |
-    // +---+---+---+
-    //     | 0 | A |
-    //     +---+---+
     let mut keypad: Keypad = HashMap::new();
-    keypad.insert(point(0,0), '7');
-    keypad.insert(point(1,0), '8');
-    keypad.insert(point(2,0), '9');
-    keypad.insert(point(0,1), '4');
-    keypad.insert(point(1,1), '5');
-    keypad.insert(point(2,1), '6');
-    keypad.insert(point(0,2), '1');
-    keypad.insert(point(1,2), '2');
-    keypad.insert(point(2,2), '3');
-    keypad.insert(point(1,3), '0');
-    keypad.insert(point(2,3), 'A');
+    let positions = [
+        ((0, 0), '7'), ((1, 0), '8'), ((2, 0), '9'),
+        ((0, 1), '4'), ((1, 1), '5'), ((2, 1), '6'),
+        ((0, 2), '1'), ((1, 2), '2'), ((2, 2), '3'),
+        ((1, 3), '0'), ((2, 3), 'A')
+    ];
+
+    for ((x, y), ch) in positions.iter() {
+        keypad.insert(point(*x, *y), *ch);
+    }
     keypad
 }
 
 fn directional_keypad() -> Keypad{
-    //     +---+---+
-    //     | ^ | A |
-    // +---+---+---+
-    // | < | v | > |
-    // +---+---+---+
     let mut keypad: Keypad = HashMap::new();
-    keypad.insert(point(1,0), '^');
-    keypad.insert(point(2,0), 'A');
-    keypad.insert(point(0,1), '<');
-    keypad.insert(point(1,1), 'v');
-    keypad.insert(point(2,1), '>');
+
+    let positions = [
+        ((1, 0), '^'), ((2, 0), 'A'),
+        ((0, 1), '<'), ((1, 1), 'v'), ((2, 1), '>'),
+    ];
+
+    for ((x, y), ch) in positions.iter() {
+        keypad.insert(point(*x, *y), *ch);
+    }
     keypad
 }
