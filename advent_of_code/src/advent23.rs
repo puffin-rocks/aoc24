@@ -1,15 +1,16 @@
 use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
-use std::rc::Rc;
+use std::sync::Arc;
 use itertools::Itertools;
+use rayon::prelude::*;
 use crate::hashset;
 use crate::utils::{Solve, Label};
 use crate::utils::*;
 
 pub(crate) struct Advent {
     label: Label,
-    edges: Vec<HashSet<Rc<String>>>,
-    vertices: HashSet<Rc<String>>,
-    d_edges: HashSet<(Rc<String>, Rc<String>)>
+    edges: Vec<HashSet<Arc<String>>>,
+    vertices: HashSet<Arc<String>>,
+    d_edges: HashSet<(Arc<String>, Arc<String>)>
 }
 
 
@@ -27,13 +28,13 @@ impl Default for Advent {
 impl Advent{
     #[allow(dead_code)]
     fn is_disjoint(&self) -> bool{
-        let mut neighbours: VecDeque<Rc<String>> = VecDeque::new();
-        let mut undecided: Vec<Rc<String>> = self.vertices.iter().cloned().collect();
+        let mut neighbours: VecDeque<Arc<String>> = VecDeque::new();
+        let mut undecided: Vec<Arc<String>> = self.vertices.iter().cloned().collect();
         if let Some(el) = self.vertices.iter().next(){
             neighbours.push_back(el.clone());
         }
         while let Some(v) = neighbours.pop_front(){
-            let mut undecided_next: Vec<Rc<String>> = Vec::new();
+            let mut undecided_next: Vec<Arc<String>> = Vec::new();
             while let Some(v_other) = undecided.pop(){
                 if self.d_edges.contains(&(v.clone(), v_other.clone())){
                     neighbours.push_back(v_other);
@@ -49,14 +50,14 @@ impl Advent{
         }
         undecided.len()!=0
     }
-    fn get_connected_triplets(&self)->HashSet<BTreeSet<Rc<String>>>{
-        let mut q: HashSet<BTreeSet<Rc<String>>> = HashSet::new();
+    fn get_connected_triplets(&self)->HashSet<BTreeSet<Arc<String>>>{
+        let mut q: HashSet<BTreeSet<Arc<String>>> = HashSet::new();
         for v in self.vertices.iter(){
             for e in self.edges.iter(){
                 if !e.contains(v) &&
                     e.iter().all( |v_other|
                         self.d_edges.contains(&(v.clone(), v_other.clone()))){
-                    let mut vec:BTreeSet<Rc<String>> = e.iter().cloned().collect();
+                    let mut vec:BTreeSet<Arc<String>> = e.iter().cloned().collect();
                     vec.insert(v.clone());
                     q.insert(vec);
                 }
@@ -76,16 +77,16 @@ impl Solve for Advent {
             let (el1, el2) = match (self.vertices.get(&el1), self.vertices.get(&el2)){
                 (Some(el1), Some(el2)) => (el1.clone(), el2.clone()),
                 (Some(el1), None) => {
-                    let el2 = Rc::new(el2);
+                    let el2 = Arc::new(el2);
                     (el1.clone(), el2)
                 },
                 (None, Some(el2)) => {
-                    let el1 = Rc::new(el1);
+                    let el1 = Arc::new(el1);
                     (el1, el2.clone())
                 },
                 (None, None) => {
-                    let el1 = Rc::new(el1);
-                    let el2 = Rc::new(el2);
+                    let el1 = Arc::new(el1);
+                    let el2 = Arc::new(el2);
                     (el1, el2)
                 }
             };
@@ -121,7 +122,7 @@ impl Solve for Advent {
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
-        let mut neighbours: HashMap<Rc<String>, HashSet<Rc<String>>> = HashMap::new();
+        let mut neighbours: HashMap<Arc<String>, HashSet<Arc<String>>> = HashMap::new();
         for v in self.vertices.iter(){
             for pair in self.d_edges.iter(){
                 if &(*pair).0 == v{
@@ -132,21 +133,29 @@ impl Solve for Advent {
 
         let mut q = self.get_connected_triplets();
         loop{
-            let mut q_next: HashSet<BTreeSet<Rc<String>>> = HashSet::new();
-            for e in q.iter() {
+            let q_next:HashSet<BTreeSet<Arc<String>>> = q.par_iter().map(|e|{
+                let mut q: HashSet<BTreeSet<Arc<String>>> = HashSet::new();
                 let ns = e.iter().skip(1).map(|v|{
                     neighbours.get(v).unwrap()
                 }).collect::<Vec<_>>();
                 for v in neighbours.get(e.first().unwrap()).unwrap().iter(){
+                    if e.contains(v){
+                        continue;
+                    }
                     if ns.iter().all(|&n| {
                         n.contains(v)
                     }){
                         let mut s = e.clone();
                         s.insert(v.clone());
-                        q_next.insert(s);
+                        q.insert(s);
                     }
                 }
+                q
             }
+            ).reduce(HashSet::new, |mut acc, set| {
+                acc.extend(set);
+                acc
+            });
             if q_next.is_empty(){
                 break;
             }
