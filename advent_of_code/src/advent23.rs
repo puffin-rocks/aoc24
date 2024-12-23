@@ -134,27 +134,15 @@ impl Solve for Advent {
         loop{
             let mut q_next: HashSet<BTreeSet<Rc<String>>> = HashSet::new();
             for e in q.iter() {
-                let mut common: Option<HashSet<Rc<String>>> = None;
-                let mut cont = true;
-                for v in e.iter() {
-                    if !cont{
-                        break;
-                    }
-                    let n = neighbours.get(v).unwrap();
-                    common = match common {
-                        Some(s) => {
-                            if s.is_empty(){
-                                cont = false;
-                            }
-                            Some(s.intersection(n).cloned().collect())
-                        },
-                        None => Some(n.clone())
-                    }
-                }
-                if let Some(common) = common{
-                    for c in common.iter() {
+                let ns = e.iter().skip(1).map(|v|{
+                    neighbours.get(v).unwrap()
+                }).collect::<Vec<_>>();
+                for v in neighbours.get(e.first().unwrap()).unwrap().iter(){
+                    if ns.iter().all(|&n| {
+                        n.contains(v)
+                    }){
                         let mut s = e.clone();
-                        s.insert(c.clone());
+                        s.insert(v.clone());
                         q_next.insert(s);
                     }
                 }
