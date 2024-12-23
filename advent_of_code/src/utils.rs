@@ -4,6 +4,19 @@ use std::io::{self, BufRead, Write};
 use std::path::Path;
 use crate::geometry::{Canvas, CanvasAsync};
 
+#[macro_export]
+macro_rules! hashset{
+    ( $( $x: expr ),* $(,)? ) => {
+        {
+            let mut set = std::collections::HashSet::new();
+            $(
+            set.insert($x);
+            )*
+            set
+        }
+    };
+}
+
 pub(crate) const PUZZLE_INPUT: &str  = "src/puzzle_input/";
 
 pub (crate) struct Label {

@@ -1,10 +1,14 @@
 use std::collections::HashSet;
-use itertools::Itertools;
+use std::rc::Rc;
+use crate::hashset;
 use crate::utils::{Solve, Label};
+use crate::utils::*;
 
 pub(crate) struct Advent {
     label: Label,
-    edges: Vec<HashSet<String>>
+    edges: Vec<HashSet<Rc<String>>>,
+    vertices: HashSet<Rc<String>>,
+    d_edges: HashSet<(Rc<String>, Rc<String>)>
 }
 
 
@@ -12,7 +16,9 @@ impl Default for Advent {
     fn default() -> Self {
         Self {
             label: Label::new(23),
-            edges: Vec::new()
+            edges: Vec::new(),
+            vertices: HashSet::new(),
+            d_edges: HashSet::new()
         }
     }
 }
@@ -23,10 +29,28 @@ impl Solve for Advent {
 
     fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError> {
         if let Some((el1, el2)) = line.split_once("-"){
-            let mut set: HashSet<String> = HashSet::new();
-            set.insert(el1.to_string());
-            set.insert(el2.to_string());
-            self.edges.push(set);
+            let (el1, el2) = (el1.to_string(), el2.to_string());
+            let (el1, el2) = match (self.vertices.get(&el1), self.vertices.get(&el2)){
+                (Some(el1), Some(el2)) => (el1.clone(), el2.clone()),
+                (Some(el1), None) => {
+                    let el2 = Rc::new(el2);
+                    (el1.clone(), el2)
+                },
+                (None, Some(el2)) => {
+                    let el1 = Rc::new(el1);
+                    (el1, el2.clone())
+                },
+                (None, None) => {
+                    let el1 = Rc::new(el1);
+                    let el2 = Rc::new(el2);
+                    (el1, el2)
+                }
+            };
+            self.vertices.insert(el1.clone());
+            self.vertices.insert(el2.clone());
+            self.d_edges.insert((el1.clone(), el2.clone()));
+            self.d_edges.insert((el2.clone(), el1.clone()));
+            self.edges.push(hashset!(el1, el2));
         }else{
             "invalid".parse::<i32>()?;
         }
@@ -42,23 +66,16 @@ impl Solve for Advent {
         //super slow
         //1238
         self.check_input(Some(1))?;
-        let mut result:HashSet<Vec<String>> = HashSet::new();
-        for edge0 in self.edges.iter(){
-            for e in edge0.iter(){
-                let mut s = HashSet::new();
-                s.insert(e.clone().to_string());
-                let other0 = edge0.difference(&s).cloned().collect::<HashSet<String>>();
-                for edge1 in self.edges.iter(){
-                    if edge1.contains(e){
-                        let mut other1 = edge1.difference(&s).cloned().collect::<HashSet<String>>();
-                        other1.extend(other0.iter().cloned());
-                        if self.edges.contains(&other1){
-                            other1.extend(s.iter().cloned());
-                            let mut vec:Vec<String> = other1.iter().cloned().collect();
-                            vec.sort_unstable();
-                            result.insert(vec);
-                        }
-                    }
+        let mut result: HashSet<Vec<Rc<String>>> = HashSet::new();
+        for v in self.vertices.iter(){
+            for e in self.edges.iter(){
+                if !e.contains(v) &&
+                    e.iter().all( |v_other|
+                        self.d_edges.contains(&(v.clone(), v_other.clone()))){
+                    let mut vec:Vec<Rc<String>> = e.iter().cloned().collect();
+                    vec.push(v.clone());
+                    vec.sort_unstable();
+                    result.insert(vec);
                 }
             }
         }
@@ -71,8 +88,7 @@ impl Solve for Advent {
                 }
             }
         }
-        println!("{}", cnt);
-        Err(String::from("Not solved yet"))
+        assert_display(cnt, Some(7), 1238, "Number of sets", test_mode)
     }
     // fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
     //     self.check_input(Some(2))?;
