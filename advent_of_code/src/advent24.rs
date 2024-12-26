@@ -169,83 +169,82 @@ impl Solve for Advent {
     }
 }
 
-fn check(gate_map: &HashMap<([char;3], [char;3], Operator), Rc<Gate>>,
-         wires: &mut HashMap<[char; 3], bool>, width:usize)->Option<(Rc<Gate>,Rc<Gate>)>{
+fn check(
+    gate_map: &HashMap<([char; 3], [char; 3], Operator), Rc<Gate>>,
+    wires: &mut HashMap<[char; 3], bool>,
+    width: usize,
+) -> Option<(Rc<Gate>, Rc<Gate>)> {
     let mut curr_position = 0;
     let mut carry;
-    if let (Some(z), Some(c)) = (gate_map.get(&(['x','0','0'], ['y','0','0'], Operator::XOR)),
-                                 gate_map.get(&(['x','0','0'], ['y','0','0'], Operator::AND))){
-        if let (Ok(_), Ok(_)) = ((*z).evaluate(wires), (*c).evaluate(wires)) {
-            let key1 = to_char3(format!("{}{:02}", 'z', curr_position).as_str()).unwrap();
-            let value1 = wires.get(&key1);
-            let key2 = z.output;
-            let value2 = wires.get(&key2);
-            if value1!=value2{
-                panic!("{:?}", (key1, key2));
-            }
-            carry = c.output;
-            curr_position+=1;
-        }else{
-            unreachable!();
-        }
-    }else{
-        return None;
-    };
-    while curr_position<width{
-        let x = to_char3(format!("{}{:02}", 'x', curr_position).as_str()).unwrap();
-        let y = to_char3(format!("{}{:02}", 'y', curr_position).as_str()).unwrap();
-        if let (Some(v), Some(t)) = (gate_map.get(&(x, y, Operator::XOR)),
-                                     gate_map.get(&(x, y, Operator::AND))){
-            match (gate_map.get(&(v.output, carry, Operator::XOR)),
-                   gate_map.get(&(v.output, carry, Operator::AND))){
-                (Some(z), Some(f)) => {
-                    match gate_map.get(&(f.output, t.output, Operator::OR)) {
-                        Some(c) => {
-                            if let (Ok(_), Ok(_), Ok(_), Ok(_), Ok(_)) = ((*v).evaluate(wires),
-                                                                          (*t).evaluate(wires),
-                                                                          (*z).evaluate(wires),
-                                                                          (*f).evaluate(wires),
-                                                                          (*c).evaluate(wires)) {
-                                let key1 = to_char3(format!("{}{:02}", 'z', curr_position).as_str()).unwrap();
-                                let value1 = wires.get(&key1);
-                                let key2 = z.output;
-                                let value2 = wires.get(&key2);
-                                if value1 != value2 {
-                                    let g_c = Rc::new(Gate::new(f.output, t.output, z.output, Operator::OR));
-                                    let g_z = Rc::new(Gate::new(v.output, carry, c.output, Operator::XOR));
-                                    return Some((g_c, g_z))
-                                }
-                                carry = c.output;
-                                curr_position += 1;
-                            } else {
-                                unreachable!();
-                            }
-                        },
-                        None => {
+    let mut x = to_char3(&format!("x{:02}", curr_position))?;
+    let mut y = to_char3(&format!("y{:02}", curr_position))?;
 
-                            if let Some(_) = gate_map.get(&(f.output, z.output, Operator::OR)) {
-                                let g_t = Rc::new(Gate::new(x, y, z.output, Operator::AND));
-                                let g_z = Rc::new(Gate::new(v.output, carry, t.output, Operator::XOR));
-                                return Some((g_t, g_z))
-                            } else if let Some(_) = gate_map.get(&(t.output, z.output, Operator::OR)) {
-                                let g_f = Rc::new(Gate::new(v.output, carry, z.output, Operator::AND));
-                                let g_z = Rc::new(Gate::new(v.output, carry, f.output, Operator::XOR));
-                                return Some((g_f, g_z))
-                            } else {
-                                panic!("Not found {:?}", (f.output, t.output, curr_position));
-                            }
-                        }
+    if let (Some(z), Some(c)) = (
+        gate_map.get(&(x, y, Operator::XOR)),
+        gate_map.get(&(x, y, Operator::AND)),
+    ) {
+        z.evaluate(wires).ok()?;
+        c.evaluate(wires).ok()?;
+
+        let key1 = to_char3(&format!("z{:02}", curr_position))?;
+        if wires.get(&key1) != wires.get(&z.output) {
+            let g_c = Rc::new(Gate::new(x, y, z.output, Operator::AND));
+            let g_z = Rc::new(Gate::new(x, y, c.output, Operator::XOR));
+            return Some((g_z, g_c));
+        }
+        carry = c.output;
+        curr_position += 1;
+    } else {
+        return None;
+    }
+
+    while curr_position < width {
+        x = to_char3(&format!("x{:02}", curr_position))?;
+        y = to_char3(&format!("y{:02}", curr_position))?;
+
+        if let (Some(v), Some(t)) = (
+            gate_map.get(&(x, y, Operator::XOR)),
+            gate_map.get(&(x, y, Operator::AND)),
+        ) {
+            if let (Some(z), Some(f)) = (
+                gate_map.get(&(v.output, carry, Operator::XOR)),
+                gate_map.get(&(v.output, carry, Operator::AND)),
+            ) {
+                if let Some(c) = gate_map.get(&(f.output, t.output, Operator::OR)) {
+                    v.evaluate(wires).ok()?;
+                    t.evaluate(wires).ok()?;
+                    z.evaluate(wires).ok()?;
+                    f.evaluate(wires).ok()?;
+                    c.evaluate(wires).ok()?;
+
+                    let key1 = to_char3(&format!("z{:02}", curr_position))?;
+                    if wires.get(&key1) != wires.get(&z.output) {
+                        let g_c = Rc::new(Gate::new(f.output, t.output, z.output, Operator::OR));
+                        let g_z = Rc::new(Gate::new(v.output, carry, c.output, Operator::XOR));
+                        return Some((g_c, g_z));
                     }
-                },
-                _ =>{
-                    let g_t = Rc::new(Gate::new(x, y, v.output, Operator::AND));
-                    let g_v = Rc::new(Gate::new(x, y, t.output, Operator::XOR));
-                    return Some((g_v, g_t));
+                    carry = c.output;
+                    curr_position += 1;
+                } else if gate_map.get(&(f.output, z.output, Operator::OR)).is_some() {
+                    let g_t = Rc::new(Gate::new(x, y, z.output, Operator::AND));
+                    let g_z = Rc::new(Gate::new(v.output, carry, t.output, Operator::XOR));
+                    return Some((g_t, g_z));
+                } else if gate_map.get(&(t.output, z.output, Operator::OR)).is_some() {
+                    let g_f = Rc::new(Gate::new(v.output, carry, z.output, Operator::AND));
+                    let g_z = Rc::new(Gate::new(v.output, carry, f.output, Operator::XOR));
+                    return Some((g_f, g_z));
+                } else {
+                    unreachable!();
                 }
+            } else {
+                let g_t = Rc::new(Gate::new(x, y, v.output, Operator::AND));
+                let g_v = Rc::new(Gate::new(x, y, t.output, Operator::XOR));
+                return Some((g_v, g_t));
             }
         } else {
-            println!("{:?}", (x, y));
+            unreachable!();
         }
     }
+
     None
 }
